@@ -1,6 +1,8 @@
-# Downloads
+# Project
 download
 download/*
+data
+data/*
 
 # Logs
 logs
