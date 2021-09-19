@@ -35,6 +35,7 @@ class UPHFScheduleScraper {
             this.clearDownloadFolder();
             this.setNextInterval();
         } else {
+            await this.updateDB();
             this.setNextInterval("RETRY");
         }
     }
@@ -60,8 +61,22 @@ class UPHFScheduleScraper {
 
     async updateDB(events) {
         try {
-            await fs.promises.writeFile(this.dataFilePath, JSON.stringify(events));
-            this.data = events;
+            if (events) {
+                const now = new Date();
+                this.data = {
+                    name: this.classname,
+                    lastUpdate: now,
+                    lastTry: now,
+                    events: events
+                }
+            } else {
+                const now = new Date();
+                this.data = {
+                    ...this.data,
+                    lastTry: now,
+                }
+            }
+            await fs.promises.writeFile(this.dataFilePath, JSON.stringify(this.data));
         } catch {
         }
     }
@@ -83,16 +98,16 @@ class UPHFScheduleScraper {
                 const temp = headerRaw[1].split("-");
                 const nameRaw = temp[0].split(" (")[0];
                 const typeRaw = temp[1];
-                if (typeRaw.includes("CM") !== -1) {
+                if (typeRaw.includes("CM")) {
                     type = "CM";
-                } else if (typeRaw.includes("TD") !== -1) {
+                } else if (typeRaw.includes("TD")) {
                     type = "TD";
-                } else if (typeRaw.includes("TP") !== -1) {
+                } else if (typeRaw.includes("TP")) {
                     type = "TP";
                 }
                 name = capitalizeFirstLetter(nameRaw.trim());
             } else {
-                if (headerRaw[0].includes("Reservation") !== -1) {
+                if (headerRaw[0].includes("Reservation")) {
                     name = "Reservation";
                     type = "RES";
                 } else {
