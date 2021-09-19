@@ -1,8 +1,7 @@
 # Project
 download
-download/*
 data
-data/*
+build
 
 # Logs
 logs
