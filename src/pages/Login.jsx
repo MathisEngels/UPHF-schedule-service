@@ -11,7 +11,7 @@ function Login({ setToken }) {
 
         if (token) {
             setToken(token);
-            toast.success("u not that stupid");
+            toast.success("u r not that stupid");
         } else {
             toast.error("who are u 👁️👄👁️");
         }
