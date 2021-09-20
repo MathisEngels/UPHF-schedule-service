@@ -86,3 +86,5 @@ class UPHFAliveChecker {
         }
     }
 }
+
+module.exports = UPHFAliveChecker;
