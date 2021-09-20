@@ -1,4 +1,4 @@
-import axios from "axios"
+import axios from "axios";
 
 const login = async (password) => {
     try {
@@ -12,7 +12,7 @@ const login = async (password) => {
 
 const verify = async (token) => {
     try {
-        const response = await axios.post("/api/verify", {}, { headers: { "authorization": token }});
+        const response = await axios.post("/api/verify", {}, { headers: { "authorization": token } });
         if (response.status === 200) return true;
         return false;
     } catch (err) {
@@ -21,9 +21,19 @@ const verify = async (token) => {
     }
 }
 
+const getStatus = async (token) => {
+    try {
+        const response = await axios.get("/api/status", { headers: { "authorization": token } });
+        return response.data;
+    } catch (err) {
+        console.log(err);
+        return null;
+    }
+}
+
 const getCDSI = async (token) => {
     try {
-        const response = await axios.get("/api/get/cdsi", { headers: { "authorization": token }});
+        const response = await axios.get("/api/get/cdsi", { headers: { "authorization": token } });
         return response.data;
     } catch (err) {
         console.log(err);
@@ -33,7 +43,7 @@ const getCDSI = async (token) => {
 
 const getMEEF = async (token) => {
     try {
-        const response = await axios.get("/api/get/meef", { headers: { "authorization": token }});
+        const response = await axios.get("/api/get/meef", { headers: { "authorization": token } });
         return response.data;
     } catch (err) {
         console.log(err);
@@ -43,7 +53,7 @@ const getMEEF = async (token) => {
 
 const updateCDSI = async (token) => {
     try {
-        const response = await axios.post("/api/update/cdsi", {}, { headers: { "authorization": token }});
+        const response = await axios.post("/api/update/cdsi", {}, { headers: { "authorization": token } });
         if (response.status === 200) return true;
         return false;
     } catch (err) {
@@ -54,7 +64,7 @@ const updateCDSI = async (token) => {
 
 const updateMEEF = async (token) => {
     try {
-        const response = await axios.post("/api/update/meef", {}, { headers: { "authorization": token }});
+        const response = await axios.post("/api/update/meef", {}, { headers: { "authorization": token } });
         if (response.status === 200) return true;
         return false;
     } catch (err) {
@@ -66,8 +76,9 @@ const updateMEEF = async (token) => {
 export {
     login,
     verify,
+    getStatus,
     getCDSI,
     getMEEF,
     updateCDSI,
     updateMEEF,
-}
+};
