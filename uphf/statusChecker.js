@@ -66,7 +66,7 @@ class UPHFStatusChecker {
         try {
             // TODO I should just append to the file and not rewriting it.
             // Maybe just keep the past 3 months too.
-            this.data.push({date: new Date().toJSON(), alive: status});
+            this.data.push({ date: new Date().toJSON(), alive: status });
             await fs.promises.writeFile(this.dataFilePath, JSON.stringify(this.data));
         } catch (error) {
             console.log("Error while trying to write to DB.");

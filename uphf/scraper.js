@@ -41,7 +41,7 @@ class UPHFScheduleScraper {
         if (success) {
             const filename = (await fs.promises.readdir(this.downloadFolderPath))[0];
             const events = this.parseICS(path.join(this.downloadFolderPath, filename));
-            
+
             await this.updateDB(events);
             this.clearDownloadFolder();
             this.setNextTimeout();
@@ -103,17 +103,17 @@ class UPHFScheduleScraper {
 
     parseICS(filePath) {
         const rawEvents = ical.sync.parseFile(filePath);
-    
+
         const events = [];
         for (const rawEvent of Object.values(rawEvents)) {
             let name = "";
             let type = "";
             let teacher = "";
             let location = "";
-    
+
             const descriptionRaw = rawEvent.description.split("\n");
             const headerRaw = descriptionRaw[0].split(" : ");
-    
+
             // Name and Type
             if (headerRaw.length > 1) {
                 const temp = headerRaw[1].split("-");
@@ -133,19 +133,19 @@ class UPHFScheduleScraper {
                     type = "RES";
                 } else {
                     type = "UKN"
-                } 
+                }
             }
 
             // Location
             const locationRaw = rawEvent.location.split(" (")[0].trim();
-            if (locationRaw === '') {
+            if (locationRaw === "") {
                 location = "Non défini";
             } else location = locationRaw;
 
             // Teacher
-            if (descriptionRaw[1] !== '') teacher = capitalizeTheFirstLetterOfEachWord(descriptionRaw[1].split(": ")[1].trim());
-            
-    
+            if (descriptionRaw[1] !== "") teacher = capitalizeTheFirstLetterOfEachWord(descriptionRaw[1].split(": ")[1].trim());
+
+
             const event = {
                 start: rawEvent.start,
                 end: rawEvent.end,
@@ -165,20 +165,20 @@ class UPHFScheduleScraper {
             headless: true
         });
         const page = await browser.newPage();
-        await page._client.send('Page.setDownloadBehavior', {
-            behavior: 'allow',
+        await page._client.send("Page.setDownloadBehavior", {
+            behavior: "allow",
             downloadPath: this.downloadFolderPath
         });
-        await page.goto("https://cas.uphf.fr/cas/login?service=https://portail.uphf.fr/uPortal/Login", { waitUntil: 'networkidle2' });
+        await page.goto("https://cas.uphf.fr/cas/login?service=https://portail.uphf.fr/uPortal/Login", { waitUntil: "networkidle2" });
         await page.type("#username", process.env[`${this.classname}_USERNAME`]);
         await page.type("#password", process.env[`${this.classname}_PASSWORD`]);
         await page.keyboard.press("Enter");
         await sleep(1000);
         try {
-            await page.goto("https://vtmob.uphf.fr/esup-vtclient-up4/stylesheets/desktop/welcome.xhtml", { waitUntil: 'networkidle2' });
+            await page.goto("https://vtmob.uphf.fr/esup-vtclient-up4/stylesheets/desktop/welcome.xhtml", { waitUntil: "networkidle2" });
             await sleep(1000);
-            await page.waitForSelector('a[title^="Export iCal"]');
-            const hrefElement = await page.$('a[title^="Export iCal"]');
+            await page.waitForSelector("a[title^='Export iCal']");
+            const hrefElement = await page.$("a[title^='Export iCal']");
             await hrefElement.click();
             await sleep(5000);
         } catch {
@@ -199,7 +199,7 @@ class UPHFScheduleScraper {
                 process.exit(1);
             }
         }
-        
+
         try {
             await fs.promises.access(this.dataFolderPath);
         } catch {
@@ -216,7 +216,7 @@ class UPHFScheduleScraper {
     clearDownloadFolder() {
         fs.readdir(this.downloadFolderPath, (err, files) => {
             if (err) throw err;
-        
+
             for (const file of files) {
                 fs.unlink(path.join(this.downloadFolderPath, file), err => {
                     if (err) throw err;
