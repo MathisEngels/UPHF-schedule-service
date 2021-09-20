@@ -8,8 +8,8 @@ require("dotenv").config();
 
 const downloadPath = path.join(__dirname, "download");
 const dataPath = path.join(__dirname, "data");
-const CDSI = new UPHFScheduleScraper(downloadPath, dataPath, "CDSI");
-const MEEF = new UPHFScheduleScraper(downloadPath, dataPath, "MEEF");
+const CDSI = new UPHFScheduleScraper(downloadPath, dataPath, "CDSI", 30, 12 * 60);
+const MEEF = new UPHFScheduleScraper(downloadPath, dataPath, "MEEF", 30, 12 * 60);
 
 const app = express();
 app.use(express.json());
@@ -72,10 +72,10 @@ app.get("/api/get/:classname", authGuard, roleGuard, async (req, res) => {
     let data;
     switch (req.params.classname.toLowerCase()) {
         case "cdsi":
-            data = await CDSI.getData();
+            data = await CDSI.toObject();
             break;
         case "meef":
-            data = await MEEF.getData();
+            data = await MEEF.toObject();
             break;
         default:
             data = null;

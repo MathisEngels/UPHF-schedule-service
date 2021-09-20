@@ -6,12 +6,14 @@ const { sleep, capitalizeTheFirstLetterOfEachWord, capitalizeFirstLetter } = req
 
 
 class UPHFScheduleScraper {
-    constructor(downloadPath, dataFolderPath, classname) {
+    constructor(downloadPath, dataFolderPath, classname, retryInterval, successInterval) {
         this.downloadFolderPath = path.join(downloadPath, classname);
         this.dataFolderPath = dataFolderPath;
         this.dataFilePath = path.join(dataFolderPath, `${classname}.json`);
         this.classname = classname;
         this.intervalID = null;
+        this.retryInterval = Math.max(5, retryInterval);
+        this.successInterval = Math.max(60, successInterval);
         this.data = null;
     }
 
@@ -55,8 +57,13 @@ class UPHFScheduleScraper {
         }
     }
 
-    async getData() {
-        return this.data;
+    async toObject() {
+        return {
+            name: this.classname,
+            data: this.data,
+            retryInterval: this.retryInterval,
+            successInterval: this.successInterval
+        }
     }
 
     async updateDB(events) {
@@ -64,7 +71,6 @@ class UPHFScheduleScraper {
             if (events) {
                 const now = new Date();
                 this.data = {
-                    name: this.classname,
                     lastUpdate: now,
                     lastTry: now,
                     events: events
@@ -77,7 +83,8 @@ class UPHFScheduleScraper {
                 }
             }
             await fs.promises.writeFile(this.dataFilePath, JSON.stringify(this.data));
-        } catch {
+        } catch (error) {
+            console.log("Error while trying to write to DB.");
         }
     }
 
@@ -94,6 +101,7 @@ class UPHFScheduleScraper {
             const descriptionRaw = rawEvent.description.split("\n");
             const headerRaw = descriptionRaw[0].split(" : ");
     
+            // Name and Type
             if (headerRaw.length > 1) {
                 const temp = headerRaw[1].split("-");
                 const nameRaw = temp[0].split(" (")[0];
@@ -114,8 +122,15 @@ class UPHFScheduleScraper {
                     type = "UKN"
                 } 
             }
-            location = rawEvent.location.split(" (")[0];
-            if (descriptionRaw[1] !== '') teacher = capitalizeTheFirstLetterOfEachWord(descriptionRaw[1].split(": ")[1]);
+
+            // Location
+            const locationRaw = rawEvent.location.split(" (")[0].trim();
+            if (locationRaw === '') {
+                location = "Non défini";
+            } else location = locationRaw;
+
+            // Teacher
+            if (descriptionRaw[1] !== '') teacher = capitalizeTheFirstLetterOfEachWord(descriptionRaw[1].split(": ")[1].trim());
             
     
             const event = {
@@ -132,15 +147,10 @@ class UPHFScheduleScraper {
     }
 
     setNextInterval(type) {
-        let intervalTime;
-        if (type === "RETRY") {
-            intervalTime = 1000 * 60 * 2;
-        } else {
-            intervalTime = 1000 * 60 * 24;
-        }
+        const intervalTime = type === "RETRY" ? this.retryInterval : this.successInterval;
         this.intervalID = setInterval(() => {
             this.loop();
-        }, intervalTime);
+        }, intervalTime * 1000 * 60);
     }
 
     async downloadFile() {
@@ -179,6 +189,7 @@ class UPHFScheduleScraper {
             try {
                 await fs.promises.mkdir(this.downloadFolderPath, { recursive: true });
             } catch {
+                console.log("Error while creating the download folder");
                 process.exit(1);
             }
         }
@@ -189,6 +200,7 @@ class UPHFScheduleScraper {
             try {
                 await fs.promises.mkdir(this.dataFolderPath, { recursive: true });
             } catch {
+                console.log("Error while creating the data folder");
                 process.exit(1);
             }
         }
