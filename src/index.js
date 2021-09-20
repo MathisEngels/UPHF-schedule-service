@@ -1,14 +1,13 @@
-import React from 'react';
-import ReactDOM from 'react-dom';
-import { ThemeProvider } from '@mui/system';
-import { CssBaseline } from '@mui/material';
-import { createTheme } from '@mui/material/styles'
-import App from './App';
-import './index.css';
+import { CssBaseline } from "@mui/material";
+import { createTheme } from "@mui/material/styles";
+import { ThemeProvider } from "@mui/system";
+import React from "react";
+import ReactDOM from "react-dom";
+import App from "./App";
 
 const darkTheme = createTheme({
   palette: {
-    mode: 'dark',
+    mode: "dark",
   }
 });
 
@@ -19,6 +18,5 @@ ReactDOM.render(
       <App />
     </ThemeProvider>
   </React.StrictMode>,
-  document.getElementById('root')
+  document.getElementById("root")
 );
-
