@@ -103,10 +103,10 @@ const totalAndSpentMinutes = (events, beginDate, finishDate) => {
         const endDate = moment(event.end);
         if ((!beginDate && !finishDate) || (beginDate && finishDate && startDate.isAfter(beginDate) && endDate.isBefore(finishDate))) {
             const now = moment();
-    
+
             const classDuration = ((endDate - startDate) / 60 / 1000);
             totalMinutes += classDuration;
-    
+
             if (endDate < now) {
                 spentMinutes += classDuration;
             } else if (startDate < now && now < endDate) {
@@ -130,7 +130,7 @@ const numberOfClassAfter = (events, limitHour) => {
         const limitDate = moment(event.end);
         limitDate.hours(limitHour.hours());
         limitDate.minutes(limitHour.minutes());
-        
+
         if (limitDate.isBefore(moment(event.end))) count++
     }
     return count;
@@ -164,4 +164,4 @@ export {
     getStats,
     minToStrHours,
     numberOfClassAfter
-}
+};
