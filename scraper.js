@@ -5,13 +5,14 @@ const ical = require("node-ical");
 const { sleep, capitalizeTheFirstLetterOfEachWord, capitalizeFirstLetter } = require("./utils");
 
 
+// TODO Switch to TS fast
 class UPHFScheduleScraper {
     constructor(downloadPath, dataFolderPath, classname, retryInterval, successInterval) {
         this.downloadFolderPath = path.join(downloadPath, classname);
         this.dataFolderPath = dataFolderPath;
         this.dataFilePath = path.join(dataFolderPath, `${classname}.json`);
         this.classname = classname;
-        this.intervalID = null;
+        this.timeoutID = null;
         this.retryInterval = Math.max(5, retryInterval);
         this.successInterval = Math.max(60, successInterval);
         this.data = null;
@@ -22,30 +23,51 @@ class UPHFScheduleScraper {
         await this.loadData();
     }
 
-    async run() {
-        await this.loop();
+    async start() {
+        await this.run();
     }
 
-    async loop() {
-        const success = await this.downloadFile();
+    stop() {
+        this.stopTimeout();
+    }
 
+    async restart() {
+        this.stop();
+        await this.start();
+    }
+
+    async run() {
+        const success = await this.downloadFile();
         if (success) {
             const filename = (await fs.promises.readdir(this.downloadFolderPath))[0];
             const events = this.parseICS(path.join(this.downloadFolderPath, filename));
             
             await this.updateDB(events);
             this.clearDownloadFolder();
-            this.setNextInterval();
+            this.setNextTimeout();
         } else {
             await this.updateDB();
-            this.setNextInterval("RETRY");
+            this.setNextTimeout("RETRY");
         }
     }
 
-    async updateAndResetLoop() {
-        clearInterval(this.intervalID);
-        this.intervalID = null;
-        await this.loop();
+    toObject() {
+        return {
+            name: this.classname,
+            data: this.data,
+            retryInterval: this.retryInterval,
+            successInterval: this.successInterval
+        }
+    }
+
+    setNextTimeout(type) {
+        const intervalTime = type === "RETRY" ? this.retryInterval : this.successInterval;
+        this.timeoutID = setTimeout(this.loop(), intervalTime * 1000 * 60);
+    }
+
+    stopTimeout() {
+        clearTimeout(this.timeoutID);
+        this.timeoutID = null;
     }
 
     async loadData() {
@@ -54,15 +76,6 @@ class UPHFScheduleScraper {
             this.data = JSON.parse(await fs.promises.readFile(this.dataFilePath));
         } catch {
             this.data = null;
-        }
-    }
-
-    async toObject() {
-        return {
-            name: this.classname,
-            data: this.data,
-            retryInterval: this.retryInterval,
-            successInterval: this.successInterval
         }
     }
 
@@ -146,13 +159,6 @@ class UPHFScheduleScraper {
         return events;
     }
 
-    setNextInterval(type) {
-        const intervalTime = type === "RETRY" ? this.retryInterval : this.successInterval;
-        this.intervalID = setInterval(() => {
-            this.loop();
-        }, intervalTime * 1000 * 60);
-    }
-
     async downloadFile() {
         this.clearDownloadFolder();
         const browser = await puppeteer.launch({
@@ -206,6 +212,7 @@ class UPHFScheduleScraper {
         }
     }
 
+    // TODO Switch it to async version
     clearDownloadFolder() {
         fs.readdir(this.downloadFolderPath, (err, files) => {
             if (err) throw err;
