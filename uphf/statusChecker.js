@@ -4,7 +4,7 @@ const axios = require("axios");
 
 
 // TODO Switch to TS fast
-class UPHFAliveChecker {
+class UPHFStatusChecker {
     constructor(dataFolderPath, interval) {
         this.dataFolderPath = dataFolderPath;
         this.dataFilePath = path.join(dataFolderPath, "status.json");
@@ -45,7 +45,7 @@ class UPHFAliveChecker {
     }
 
     startInterval() {
-        this.intervalID = setInterval(this.check, this.interval * 1000 * 60);
+        this.intervalID = setInterval(() => this.check(), this.interval * 1000 * 60);
     }
 
     stopInterval() {
@@ -66,7 +66,7 @@ class UPHFAliveChecker {
         try {
             // TODO I should just append to the file and not rewriting it.
             // Maybe just keep the past 3 months too.
-            this.data.push({date: new Date(), alive: status});
+            this.data.push({date: new Date().toJSON(), alive: status});
             await fs.promises.writeFile(this.dataFilePath, JSON.stringify(this.data));
         } catch (error) {
             console.log("Error while trying to write to DB.");
@@ -87,4 +87,4 @@ class UPHFAliveChecker {
     }
 }
 
-module.exports = UPHFAliveChecker;
+module.exports = UPHFStatusChecker;

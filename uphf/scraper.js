@@ -62,7 +62,7 @@ class UPHFScheduleScraper {
 
     setNextTimeout(type) {
         const intervalTime = type === "RETRY" ? this.retryInterval : this.successInterval;
-        this.timeoutID = setTimeout(this.run, intervalTime * 1000 * 60);
+        this.timeoutID = setTimeout(() => this.run(), intervalTime * 1000 * 60);
     }
 
     stopTimeout() {
@@ -82,14 +82,14 @@ class UPHFScheduleScraper {
     async updateDB(events) {
         try {
             if (events) {
-                const now = new Date();
+                const now = new Date().toJSON();
                 this.data = {
                     lastUpdate: now,
                     lastTry: now,
                     events: events
                 }
             } else {
-                const now = new Date();
+                const now = new Date().toJSON();
                 this.data = {
                     ...this.data,
                     lastTry: now,
