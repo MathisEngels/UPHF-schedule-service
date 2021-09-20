@@ -1,16 +1,16 @@
 const fs = require("fs");
 const path = require("path");
-const { axios } = require("axios");
+const axios = require("axios");
 
 
 // TODO Switch to TS fast
 class UPHFAliveChecker {
     constructor(dataFolderPath, interval) {
         this.dataFolderPath = dataFolderPath;
-        this.dataFilePath = path.join(dataFolderPath, `status.json`);
+        this.dataFilePath = path.join(dataFolderPath, "status.json");
         this.interval = Math.max(5, interval);
         this.intervalID = null;
-        this.data = null;
+        this.data = [];
     }
 
     async start() {
@@ -58,7 +58,7 @@ class UPHFAliveChecker {
             await fs.promises.access(this.dataFilePath);
             this.data = JSON.parse(await fs.promises.readFile(this.dataFilePath));
         } catch {
-            this.data = null;
+            this.data = [];
         }
     }
 
