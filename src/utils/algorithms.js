@@ -152,7 +152,7 @@ const getStats = (events, beginDate, finishDate) => {
 
 const minToStrHours = (min) => {
     const hours = Math.floor(min / 60);
-    const minutes = min % 60;
+    const minutes = Math.floor(min % 60);
     if (hours > 0) {
         if (minutes > 0) return hours + "h" + minutes;
         return hours + "h";
