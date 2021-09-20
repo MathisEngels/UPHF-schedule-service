@@ -54,15 +54,15 @@ class UPHFScheduleScraper {
     toObject() {
         return {
             name: this.classname,
-            data: this.data,
             retryInterval: this.retryInterval,
-            successInterval: this.successInterval
+            successInterval: this.successInterval,
+            ...this.data,
         }
     }
 
     setNextTimeout(type) {
         const intervalTime = type === "RETRY" ? this.retryInterval : this.successInterval;
-        this.timeoutID = setTimeout(this.loop(), intervalTime * 1000 * 60);
+        this.timeoutID = setTimeout(this.run, intervalTime * 1000 * 60);
     }
 
     stopTimeout() {
