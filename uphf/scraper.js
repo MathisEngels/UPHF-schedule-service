@@ -4,7 +4,6 @@ const puppeteer = require("puppeteer");
 const ical = require("node-ical");
 const { sleep, capitalizeTheFirstLetterOfEachWord, capitalizeFirstLetter } = require("./utils");
 
-
 // TODO Switch to TS fast
 class UPHFScheduleScraper {
     constructor(downloadPath, dataFolderPath, classname, retryInterval, successInterval) {
@@ -57,7 +56,7 @@ class UPHFScheduleScraper {
             retryInterval: this.retryInterval,
             successInterval: this.successInterval,
             ...this.data,
-        }
+        };
     }
 
     setNextTimeout(type) {
@@ -86,14 +85,14 @@ class UPHFScheduleScraper {
                 this.data = {
                     lastUpdate: now,
                     lastTry: now,
-                    events: events
-                }
+                    events: events,
+                };
             } else {
                 const now = new Date().toJSON();
                 this.data = {
                     ...this.data,
                     lastTry: now,
-                }
+                };
             }
             await fs.promises.writeFile(this.dataFilePath, JSON.stringify(this.data));
         } catch (error) {
@@ -132,7 +131,7 @@ class UPHFScheduleScraper {
                     name = "Reservation";
                     type = "RES";
                 } else {
-                    type = "UKN"
+                    type = "UKN";
                 }
             }
 
@@ -145,29 +144,28 @@ class UPHFScheduleScraper {
             // Teacher
             if (descriptionRaw[1] !== "") teacher = capitalizeTheFirstLetterOfEachWord(descriptionRaw[1].split(": ")[1].trim());
 
-
             const event = {
                 start: rawEvent.start,
                 end: rawEvent.end,
                 name,
                 type,
                 location,
-                teacher
-            }
+                teacher,
+            };
             events.push(event);
-        };
+        }
         return events;
     }
 
     async downloadFile() {
         this.clearDownloadFolder();
         const browser = await puppeteer.launch({
-            headless: true
+            headless: true,
         });
         const page = await browser.newPage();
         await page._client.send("Page.setDownloadBehavior", {
             behavior: "allow",
-            downloadPath: this.downloadFolderPath
+            downloadPath: this.downloadFolderPath,
         });
         await page.goto("https://cas.uphf.fr/cas/login?service=https://portail.uphf.fr/uPortal/Login", { waitUntil: "networkidle2" });
         await page.type("#username", process.env[`${this.classname}_USERNAME`]);
@@ -218,7 +216,7 @@ class UPHFScheduleScraper {
             if (err) throw err;
 
             for (const file of files) {
-                fs.unlink(path.join(this.downloadFolderPath, file), err => {
+                fs.unlink(path.join(this.downloadFolderPath, file), (err) => {
                     if (err) throw err;
                 });
             }

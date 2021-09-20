@@ -9,7 +9,10 @@ class MinuteCounter {
     }
 
     addOrSetToKey(key, startDate, endDate) {
-        if ((!this.beginDate && !this.finishDate) || (this.beginDate && this.finishDate && startDate.isAfter(this.beginDate) && endDate.isBefore(this.finishDate))) {
+        if (
+            (!this.beginDate && !this.finishDate) ||
+            (this.beginDate && this.finishDate && startDate.isAfter(this.beginDate) && endDate.isBefore(this.finishDate))
+        ) {
             let index = -1;
             for (let i = 0; i < this.data.length; i++) {
                 if (this.data[i].key === key) {
@@ -18,12 +21,12 @@ class MinuteCounter {
                 }
             }
 
-            const total = ((endDate - startDate) / 1000 / 60);
+            const total = (endDate - startDate) / 1000 / 60;
             let spent = 0;
             if (endDate.isBefore(this.now)) {
                 spent = total;
             } else if (this.now.isBetween(startDate, endDate)) {
-                spent = ((this.now - startDate) / 1000 / 60);
+                spent = (this.now - startDate) / 1000 / 60;
             }
 
             if (index !== -1) {
@@ -63,7 +66,7 @@ const minutesBySubjects = (events, beginDate, finishDate) => {
     }
 
     return result.toObject();
-}
+};
 
 const minutesByType = (events, beginDate, finishDate) => {
     const result = new MinuteCounter(beginDate, finishDate);
@@ -73,7 +76,7 @@ const minutesByType = (events, beginDate, finishDate) => {
     }
 
     return result.toObject();
-}
+};
 
 const minutesByTeachers = (events, beginDate, finishDate) => {
     const result = new MinuteCounter(beginDate, finishDate);
@@ -83,7 +86,7 @@ const minutesByTeachers = (events, beginDate, finishDate) => {
     }
 
     return result.toObject();
-}
+};
 
 const minutesByLocations = (events, beginDate, finishDate) => {
     const result = new MinuteCounter(beginDate, finishDate);
@@ -93,7 +96,7 @@ const minutesByLocations = (events, beginDate, finishDate) => {
     }
 
     return result.toObject();
-}
+};
 
 const totalAndSpentMinutes = (events, beginDate, finishDate) => {
     let totalMinutes = 0;
@@ -104,25 +107,25 @@ const totalAndSpentMinutes = (events, beginDate, finishDate) => {
         if ((!beginDate && !finishDate) || (beginDate && finishDate && startDate.isAfter(beginDate) && endDate.isBefore(finishDate))) {
             const now = moment();
 
-            const classDuration = ((endDate - startDate) / 60 / 1000);
+            const classDuration = (endDate - startDate) / 60 / 1000;
             totalMinutes += classDuration;
 
             if (endDate < now) {
                 spentMinutes += classDuration;
             } else if (startDate < now && now < endDate) {
-                spentMinutes += ((now - startDate) / 60 / 1000);
+                spentMinutes += (now - startDate) / 60 / 1000;
             }
         }
     }
     return { spent: spentMinutes, total: totalMinutes };
-}
+};
 
 const percentageCompleted = (spent, total) => {
     if (total === 0) return 100;
-    const percentage = spent * 100 / total;
+    const percentage = (spent * 100) / total;
 
     return +(Math.round(percentage + "e+2") + "e-2");
-}
+};
 
 const numberOfClassAfter = (events, limitHour) => {
     let count = 0;
@@ -131,7 +134,7 @@ const numberOfClassAfter = (events, limitHour) => {
         limitDate.hours(limitHour.hours());
         limitDate.minutes(limitHour.minutes());
 
-        if (limitDate.isBefore(moment(event.end))) count++
+        if (limitDate.isBefore(moment(event.end))) count++;
     }
     return count;
 };
@@ -147,8 +150,8 @@ const getStats = (events, beginDate, finishDate) => {
         minByType: minutesByType(events, beginDate, finishDate),
         minByTeachers: minutesByTeachers(events, beginDate, finishDate),
         minByLocations: minutesByLocations(events, beginDate, finishDate),
-    }
-}
+    };
+};
 
 const minToStrHours = (min) => {
     const hours = Math.floor(min / 60);
@@ -158,10 +161,6 @@ const minToStrHours = (min) => {
         return hours + "h";
     }
     return minutes;
-}
-
-export {
-    getStats,
-    minToStrHours,
-    numberOfClassAfter
 };
+
+export { getStats, minToStrHours, numberOfClassAfter };

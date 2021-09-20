@@ -6,17 +6,17 @@ import ReactDOM from "react-dom";
 import App from "./App";
 
 const darkTheme = createTheme({
-  palette: {
-    mode: "dark",
-  }
+    palette: {
+        mode: "dark",
+    },
 });
 
 ReactDOM.render(
-  <React.StrictMode>
-    <ThemeProvider theme={darkTheme}>
-      <CssBaseline />
-      <App />
-    </ThemeProvider>
-  </React.StrictMode>,
-  document.getElementById("root")
+    <React.StrictMode>
+        <ThemeProvider theme={darkTheme}>
+            <CssBaseline />
+            <App />
+        </ThemeProvider>
+    </React.StrictMode>,
+    document.getElementById("root")
 );

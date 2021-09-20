@@ -1,6 +1,5 @@
 import { Paper, Typography } from "@mui/material";
 
-
 function Card(props) {
     return (
         <Paper
@@ -12,7 +11,8 @@ function Card(props) {
                 margin: 2,
                 display: "flex",
                 flexDirection: "column",
-            }}>
+            }}
+        >
             <Typography variant={"h6"} align={"center"} sx={{ marginBottom: 1 }}>
                 {props.title}
             </Typography>
@@ -21,4 +21,4 @@ function Card(props) {
     );
 }
 
-export default Card
+export default Card;

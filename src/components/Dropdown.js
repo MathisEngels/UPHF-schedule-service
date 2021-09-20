@@ -1,5 +1,5 @@
-import { Accordion, AccordionSummary, AccordionDetails, Box, Divider, Typography } from "@mui/material";
-import { ExpandMore, CheckCircle } from "@mui/icons-material";
+import { CheckCircle, ExpandMore } from "@mui/icons-material";
+import { Accordion, AccordionDetails, AccordionSummary, Box, Divider, Typography } from "@mui/material";
 import { minToStrHours } from "../utils/algorithms";
 
 function Dropdown(props) {
@@ -12,13 +12,9 @@ function Dropdown(props) {
                         {props.data.length > 0 ? (
                             <>
                                 <Typography align={"right"}>
-                                    {props.data[0].key} - {minToStrHours(props.data[0].spent)}/
-                                    {minToStrHours(props.data[0].total)}
+                                    {props.data[0].key} - {minToStrHours(props.data[0].spent)}/{minToStrHours(props.data[0].total)}
                                 </Typography>
-                                <CheckCircle
-                                    color={props.data[0].spent === props.data[0].total ? "success" : "disabled"}
-                                    sx={{ marginLeft: 2 }}
-                                />
+                                <CheckCircle color={props.data[0].spent === props.data[0].total ? "success" : "disabled"} sx={{ marginLeft: 2 }} />
                             </>
                         ) : (
                             <></>
@@ -38,16 +34,14 @@ function Dropdown(props) {
                                     justifyContent: "space-between",
                                     marginTop: 1,
                                     marginBottom: 1,
-                                }}>
+                                }}
+                            >
                                 <Typography>{value.key}</Typography>
                                 <Box sx={{ display: "flex" }}>
                                     <Typography align={"right"}>
                                         {minToStrHours(value.spent)}/{minToStrHours(value.total)}
                                     </Typography>
-                                    <CheckCircle
-                                        color={value.spent === value.total ? "success" : "disabled"}
-                                        sx={{ marginLeft: 4 }}
-                                    />
+                                    <CheckCircle color={value.spent === value.total ? "success" : "disabled"} sx={{ marginLeft: 4 }} />
                                 </Box>
                             </Box>
                             {i !== props.data.length - 1 && (

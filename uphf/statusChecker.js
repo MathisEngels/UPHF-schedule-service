@@ -2,7 +2,6 @@ const fs = require("fs");
 const path = require("path");
 const axios = require("axios");
 
-
 // TODO Switch to TS fast
 class UPHFStatusChecker {
     constructor(dataFolderPath, interval) {
