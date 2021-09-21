@@ -41,13 +41,21 @@ class MinuteCounter {
     sort() {
         if (this.data.length > 1) {
             for (let i = 0; i < this.data.length; i++) {
-                for (let j = 0; j < this.data.length; j++) {
-                    if (this.data[i].total > this.data[j].total) {
-                        const temp = this.data[i];
-                        this.data[i] = this.data[j];
-                        this.data[j] = temp;
+                let maxTotalIndex = i;
+                for (let j = i + 1; j < this.data.length; j++) {
+                    if (this.data[maxTotalIndex].total < this.data[j].total) {
+                        maxTotalIndex = j;
+                    } else if (this.data[maxTotalIndex].total === this.data[j].total) {
+                        if (this.data[maxTotalIndex].spent > this.data[j].spent) {
+                            const temp = this.data[j];
+                            this.data[j] = this.data[maxTotalIndex];
+                            this.data[maxTotalIndex] = temp;
+                        }
                     }
                 }
+                const temp = this.data[i];
+                this.data[i] = this.data[maxTotalIndex];
+                this.data[maxTotalIndex] = temp;
             }
         }
     }
@@ -155,12 +163,9 @@ const getStats = (events, beginDate, finishDate) => {
 
 const minToStrHours = (min) => {
     const hours = Math.floor(min / 60);
-    const minutes = Math.floor(min % 60);
-    if (hours > 0) {
-        if (minutes > 0) return hours + "h" + minutes;
-        return hours + "h";
-    }
-    return minutes;
+    const minutes = Math.floor(min % 60).toLocaleString(undefined, { minimumIntegerDigits: 2 });
+    if (minutes > 0) return hours + "h" + minutes;
+    return hours + "h";
 };
 
 export { getStats, minToStrHours, numberOfClassAfter };
