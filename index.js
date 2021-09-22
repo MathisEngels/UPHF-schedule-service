@@ -5,13 +5,15 @@ const jwt = require("jsonwebtoken");
 const { v4: uuidv4 } = require("uuid");
 const UPHFScheduleScraper = require("./uphf/scraper");
 const UPHFStatusChecker = require("./uphf/statusChecker");
+const ScraperManager = require("./uphf/scraperManager");
 require("dotenv").config();
 
 const downloadPath = path.join(__dirname, "download");
 const dataPath = path.join(__dirname, "data");
 const statusChecker = new UPHFStatusChecker(dataPath, 5);
-const CDSI = new UPHFScheduleScraper(downloadPath, dataPath, "CDSI", 30, 12 * 60);
-const MEEF = new UPHFScheduleScraper(downloadPath, dataPath, "MEEF", 30, 12 * 60);
+const scraperManager = new ScraperManager();
+scraperManager.register(new UPHFScheduleScraper(downloadPath, dataPath, "CDSI", 30, 12 * 60));
+scraperManager.register(new UPHFScheduleScraper(downloadPath, dataPath, "MEEF", 30, 12 * 60));
 
 const app = express();
 app.use(express.json());
@@ -59,11 +61,19 @@ app.post("/api/auth", async (req, res) => {
 
     if (adminMatch || cdsiMatch || meefMatch) {
         let role;
-        if (adminMatch) role = "admin";
-        if (cdsiMatch) role = "cdsi";
-        if (meefMatch) role = "meef";
+        let schedules;
+        if (adminMatch) {
+            role = "admin";
+            schedules = scraperManager.list();
+        } else if (cdsiMatch) {
+            role = "cdsi";
+            schedules = ["CDSI"];
+        } else if (meefMatch) {
+            role = "meef";
+            schedules = ["MEEF"];
+        }
 
-        const token = jwt.sign({ uuid: uuidv4(), role: role }, process.env.JWT_SECRET, { expiresIn: "365 days" });
+        const token = jwt.sign({ uuid: uuidv4(), role: role, schedules: schedules }, process.env.JWT_SECRET, { expiresIn: "365 days" });
         return res.status(200).json({ token: token });
     }
     return res.status(401).end();
@@ -79,10 +89,10 @@ app.get("/api/get/:classname", authGuard, roleGuard, (req, res) => {
     let data;
     switch (req.params.classname.toLowerCase()) {
         case "cdsi":
-            data = CDSI.toObject();
+            data = scraperManager.get("CDSI").toObject();
             break;
         case "meef":
-            data = MEEF.toObject();
+            data = scraperManager.get("MEEF").toObject();
             break;
         default:
             data = null;
@@ -94,14 +104,14 @@ app.get("/api/get/:classname", authGuard, roleGuard, (req, res) => {
 app.post("/api/update/:classname", authGuard, adminOnly, async (req, res) => {
     switch (req.params.classname.toLowerCase()) {
         case "cdsi":
-            await CDSI.restart();
+            const scraper = scraperManager.get("CDSI");
+            await scraper.restart();
             break;
         case "meef":
-            await MEEF.restart();
+            const scraper = scraperManager.get("MEEF");
+            await scraper.restart();
             break;
         default:
-            await CDSI.restart();
-            await MEEF.restart();
             break;
     }
     return res.status(200).end();
@@ -113,8 +123,6 @@ app.get("*", (_, res) => {
 app.listen(process.env.PORT, async () => {
     console.log(`Server running on port ${process.env.PORT}`);
     await statusChecker.start();
-    await CDSI.init();
-    await MEEF.init();
-    // await CDSI.run();
-    // await MEEF.run();
+    await scraperManager.init();
+    // await scraperManager.run();
 });

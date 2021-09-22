@@ -50,6 +50,10 @@ class UPHFScheduleScraper {
         }
     }
 
+    getClassname() {
+        return this.classname;
+    }
+
     toObject() {
         return {
             name: this.classname,
