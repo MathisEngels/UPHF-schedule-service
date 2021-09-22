@@ -102,13 +102,14 @@ app.get("/api/get/:classname", authGuard, roleGuard, (req, res) => {
     return res.status(200).json(data);
 });
 app.post("/api/update/:classname", authGuard, adminOnly, async (req, res) => {
+    let scraper;
     switch (req.params.classname.toLowerCase()) {
         case "cdsi":
-            const scraper = scraperManager.get("CDSI");
+            scraper = scraperManager.get("CDSI");
             await scraper.restart();
             break;
         case "meef":
-            const scraper = scraperManager.get("MEEF");
+            scraper = scraperManager.get("MEEF");
             await scraper.restart();
             break;
         default:
