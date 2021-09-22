@@ -1,5 +1,21 @@
-import { Cancel, CheckCircle, ChevronLeft, ChevronRight } from "@mui/icons-material";
-import { Box, Button, Container, Divider, Drawer, Grid, IconButton, MenuItem, Select, Tab, Tabs, Typography, useMediaQuery } from "@mui/material";
+import { Cancel, CheckCircle, ChevronLeft, ChevronRight, Menu } from "@mui/icons-material";
+import {
+    Box,
+    Button,
+    ButtonGroup,
+    Container,
+    Divider,
+    Drawer,
+    Grid,
+    IconButton,
+    Link,
+    MenuItem,
+    Select,
+    Tab,
+    Tabs,
+    Typography,
+    useMediaQuery
+} from "@mui/material";
 import chroma from "chroma-js";
 import jwt from "jsonwebtoken";
 import moment from "moment";
@@ -10,7 +26,7 @@ import Confetti from "react-confetti";
 import toast from "react-hot-toast";
 import { Card, Dropdown, Subtitle } from "../components";
 import { getStats, minToStrHours, numberOfClassAfter } from "../utils/algorithms";
-import { getStatus, getCDSI, verify } from "../utils/api";
+import { getCDSI, getStatus, verify } from "../utils/api";
 import "./Dashboard.css";
 
 const donne = {
@@ -750,7 +766,8 @@ function Dashboard({ token, deleteToken }) {
     const isDesktop = useMediaQuery("(min-width:750px)");
 
     const [user, setUser] = useState();
-    const [drawerOpen, setDrawerOpen] = useState(false);
+    const [selectedSchedule, setSelectedSchedule] = useState();
+    const [sidebarMenuOpen, setSidebarMenuOpen] = useState(false);
     const [dateLimit, setDateLimit] = useState("year");
     const [scheduleData, setScheduleData] = useState();
     const [aliveData, setAliveData] = useState();
@@ -785,10 +802,14 @@ function Dashboard({ token, deleteToken }) {
         setUser(jwt.decode(token));
         setAliveData(donneee);
         setScheduleData(donne);
-        console.log(token);
 
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
+    useEffect(() => {
+        if (user) {
+            setSelectedSchedule(user.schedules[0]);
+        }
+    }, [user]);
     useEffect(() => {
         if (scheduleData) setStats(getStats(scheduleData.events));
     }, [scheduleData]);
@@ -855,11 +876,15 @@ function Dashboard({ token, deleteToken }) {
             setDateLimit(newValue);
         }
     };
-    const toggleDrawer = () => {
-        setDrawerOpen(!drawerOpen);
+    const toggleSidebarMenu = () => {
+        setSidebarMenuOpen(!sidebarMenuOpen);
+    };
+    const logOut = () => {
+        toast.success("bbye u stinky man");
+        deleteToken();
     };
 
-    const Menu = () => {
+    const DateLimitMenu = () => {
         return isDesktop ? (
             <>
                 <Tabs centered variant={"fullWidth"} value={dateLimit} onChange={handleDateLimitChange}>
@@ -985,6 +1010,39 @@ function Dashboard({ token, deleteToken }) {
             </Box>
         );
     };
+    const SidebarMenu = () => {
+        return (
+            <Drawer anchor={"right"} open={sidebarMenuOpen} onClose={toggleSidebarMenu}>
+                <Box sx={{ display: "flex", alignItems: "center", justifyContent: "start", padding: 1 }}>
+                    <IconButton onClick={toggleSidebarMenu}>{sidebarMenuOpen ? <ChevronRight /> : <ChevronLeft />}</IconButton>
+                </Box>
+                <Divider />
+                <Box sx={{ width: 250 }}>
+                    <Box sx={{ width: 200, margin: "auto", marginTop: 1, display: "flex", flexDirection: "column", alignItems: "center" }}>
+                        <Typography align={"center"} variant={"h4"}>
+                            EDT(s)
+                        </Typography>
+                        <ButtonGroup orientation={"vertical"} sx={{ width: "fit-content", marginTop: 1, marginBottom: 1 }}>
+                            {user.schedules.map((value) => {
+                                return <Button variant={selectedSchedule === value ? "contained" : "outlined"}>{value}</Button>;
+                            })}
+                        </ButtonGroup>
+                        <Divider />
+                        <Subtitle value={`Connecté en tant que ${user.role}.`} />
+                        <Link href={"#"} variant={"subtitle2"} sx={{ fontSize: 12, color: "#808080" }} onClick={logOut}>
+                            Deconnexion
+                        </Link>
+                    </Box>
+                    <Box sx={{ position: "absolute", bottom: 0, textAlign: "center", width: 1, marginBottom: 1 }}>
+                        <Link href={"TODO"} variant={"subtitle2"} sx={{ fontSize: 12, color: "#808080" }}>
+                            Github
+                        </Link>
+                        <Subtitle value={"Mathis Engels"} />
+                    </Box>
+                </Box>
+            </Drawer>
+        );
+    };
 
     return (
         <Container maxWidth={false}>
@@ -996,13 +1054,16 @@ function Dashboard({ token, deleteToken }) {
                         </Grid>
                         <Grid item xs={12} sm={3}>
                             <Box sx={{ display: "flex", flexDirection: "column", textAlign: "center" }}>
+                                <IconButton onClick={toggleSidebarMenu} sx={{ position: "absolute", right: "8px" }}>
+                                    <Menu />
+                                </IconButton>
                                 <Typography variant={"h4"}>{scheduleData.name}</Typography>
                                 <Subtitle value={`Dernière update : ${moment(scheduleData.lastUpdate).format("HH:mm:ss - DD/MM/YYYY")}`} />
                                 <Subtitle value={`Dernier essai : ${moment(scheduleData.lastTry).format("HH:mm:ss - DD/MM/YYYY")}`} />
-                                <Button sx={{ marginTop: 2, marginBottom: 1 }} variant="outlined" onClick={toggleDrawer}>
+                                <Button sx={{ marginTop: 2, marginBottom: 1 }} variant="outlined">
                                     Add to Google Calendar
                                 </Button>
-                                <Button sx={{ marginTop: 1, marginBottom: 2 }} variant="outlined" disabled>
+                                <Button sx={{ marginTop: 1, marginBottom: 2 }} variant="outlined" disabled={user.role !== "admin"}>
                                     Update
                                 </Button>
                             </Box>
@@ -1010,7 +1071,7 @@ function Dashboard({ token, deleteToken }) {
                     </Grid>
                     <Divider />
                     <Container maxWidth={false} sx={{ padding: 2 }}>
-                        {Menu()}
+                        {DateLimitMenu()}
                         {stats && (
                             <>
                                 {Cards()}
@@ -1018,13 +1079,7 @@ function Dashboard({ token, deleteToken }) {
                             </>
                         )}
                     </Container>
-                    <Drawer anchor={"left"} open={drawerOpen} onClose={toggleDrawer}>
-                        <Box sx={{ display: "flex", alignItems: "center", justifyContent: "end", padding: 1 }}>
-                            <IconButton onClick={toggleDrawer}>{drawerOpen ? <ChevronLeft /> : <ChevronRight />}</IconButton>
-                        </Box>
-                        <Divider />
-                        <Box sx={{ width: 250 }}>Connecté en tant que {user.role}</Box>
-                    </Drawer>
+                    {SidebarMenu()}
                     {confettiRunning && <Confetti recycle={false} numberOfPieces={500} onConfettiComplete={onConfettiComplete} />}
                 </>
             )}
