@@ -4,6 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
+    "prestart": "react-scripts build",
     "start": "node index.js",
     "react-start": "react-scripts start",
     "react-build": "react-scripts build",
