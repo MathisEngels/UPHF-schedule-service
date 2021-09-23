@@ -11,10 +11,11 @@ import {
     Link,
     MenuItem,
     Select,
+    Skeleton,
     Tab,
     Tabs,
     Typography,
-    useMediaQuery
+    useMediaQuery,
 } from "@mui/material";
 import chroma from "chroma-js";
 import jwt from "jsonwebtoken";
@@ -25,8 +26,8 @@ import "react-circular-progressbar/dist/styles.css";
 import Confetti from "react-confetti";
 import toast from "react-hot-toast";
 import { Card, Dropdown, Subtitle } from "../components";
-import { getStats, minToStrHours, numberOfClassAfter } from "../utils/algorithms";
-import { getCDSI, getStatus, verify } from "../utils/api";
+import { getScheduleStats, getStatusStats, minToStrHours } from "../utils/algorithms";
+import { getSchedule, getStatus, verify } from "../utils/api";
 import "./Dashboard.css";
 
 const donne = {
@@ -765,13 +766,15 @@ function Dashboard({ token, deleteToken }) {
     const gradient = chroma.scale(["#e5405e", "#ffdb3a", "#3fffa2"]);
     const isDesktop = useMediaQuery("(min-width:750px)");
 
+    const [sidebarMenuOpen, setSidebarMenuOpen] = useState(false);
+    const [confettiRunning, setConfettiRunning] = useState(false);
     const [user, setUser] = useState();
     const [selectedSchedule, setSelectedSchedule] = useState();
-    const [sidebarMenuOpen, setSidebarMenuOpen] = useState(false);
-    const [dateLimit, setDateLimit] = useState("year");
+    const [timespan, setTimespan] = useState("year");
+    const [beginFinishDates, setBeginFinishDates] = useState();
     const [scheduleData, setScheduleData] = useState();
-    const [aliveData, setAliveData] = useState();
-    const [stats, setStats] = useState({
+    const [statusData, setStatusData] = useState();
+    const [scheduleStats, setScheduleStats] = useState({
         percentage: 0,
         minTotal: 0,
         minSpent: 0,
@@ -779,8 +782,16 @@ function Dashboard({ token, deleteToken }) {
         minByType: [],
         minByTeachers: [],
         minByLocations: [],
+        numOfClassAfter: 0,
     });
-    const [confettiRunning, setConfettiRunning] = useState(false);
+    const [statusStats, setStatusStats] = useState({
+        percentage: 0,
+        aliveTimes: 0,
+        currentlyAlive: false,
+        lastUpdate: null,
+        firstUpdate: null,
+        numOfUpdates: 0,
+    });
 
     useEffect(() => {
         async function verifyToken() {
@@ -789,105 +800,153 @@ function Dashboard({ token, deleteToken }) {
                 deleteToken();
                 toast.error("nah but fr who are u 👀");
             }
-
-            const scheduleRes = await getCDSI(token);
-            const aliveRes = await getStatus(token);
-            console.log(scheduleRes);
-            console.log(aliveRes);
-            setScheduleData(scheduleRes);
-            setAliveData(aliveRes);
-            //console.log(response);
         }
-        // verifyToken();
+        verifyToken();
         setUser(jwt.decode(token));
-        setAliveData(donneee);
-        setScheduleData(donne);
+        updateStatusData();
+
+        // Une fois l'utilisateur fetch on fait les bonnes requetes.
+        // setStatusData(donneee);
+        // setScheduleData(donne);
 
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
+
     useEffect(() => {
-        if (user) {
-            setSelectedSchedule(user.schedules[0]);
-        }
+        if (user) setSelectedSchedule(user.schedules[0]);
     }, [user]);
     useEffect(() => {
-        if (scheduleData) setStats(getStats(scheduleData.events));
-    }, [scheduleData]);
+        if (selectedSchedule) updateScheduleData();
+    }, [selectedSchedule]);
     useEffect(() => {
-        if (scheduleData) {
-            let beginDate;
-            let finishDate;
-            switch (dateLimit) {
-                case "day":
-                    beginDate = moment().startOf("day");
-                    finishDate = moment().endOf("day");
-                    break;
-                case "week":
-                    beginDate = moment().startOf("isoWeek").startOf("day");
-                    finishDate = moment().endOf("isoWeek").endOf("day");
-                    break;
-                case "month":
-                    beginDate = moment().startOf("month").startOf("day");
-                    finishDate = moment().endOf("month").endOf("day");
-                    break;
-                case "semester":
-                    beginDate = moment("2021-09-01").startOf("day");
-                    finishDate = moment("2021-12-18").endOf("day");
-                    break;
-                case "year":
-                    beginDate = null;
-                    finishDate = null;
-                    break;
-                case "vacation":
-                    beginDate = moment("2021-09-01").startOf("day");
-                    const allSaints = moment("2021-10-23").endOf("day");
-                    const christmas = moment("2021-12-18").endOf("day");
-                    const winter = moment("2022-02-12").endOf("day");
-                    const spring = moment("2022-04-16").endOf("day");
-                    const summer = moment("2022-07-16").endOf("day");
-                    if (moment().isBefore(allSaints)) {
-                        finishDate = allSaints;
-                    } else if (moment().isBefore(christmas)) {
-                        finishDate = christmas;
-                    } else if (moment().isBefore(winter)) {
-                        finishDate = winter;
-                    } else if (moment().isBefore(spring)) {
-                        finishDate = spring;
-                    } else finishDate = summer;
-                    break;
-                default:
-                    finishDate = null;
-                    break;
-            }
-            setStats(getStats(scheduleData.events, beginDate, finishDate));
+        if (statusData) updateStatusStats();
+    }, [statusData]);
+    useEffect(() => {
+        let beginDate;
+        let finishDate;
+        switch (timespan) {
+            case "day":
+                beginDate = moment().startOf("day");
+                finishDate = moment().endOf("day");
+                break;
+            case "week":
+                beginDate = moment().startOf("isoWeek").startOf("day");
+                finishDate = moment().endOf("isoWeek").endOf("day");
+                break;
+            case "month":
+                beginDate = moment().startOf("month").startOf("day");
+                finishDate = moment().endOf("month").endOf("day");
+                break;
+            case "semester":
+                beginDate = moment("2021-09-01").startOf("day");
+                finishDate = moment("2021-12-18").endOf("day");
+                break;
+            case "year":
+                beginDate = null;
+                finishDate = null;
+                break;
+            case "vacation":
+                beginDate = moment("2021-09-01").startOf("day");
+                const allSaints = moment("2021-10-23").endOf("day");
+                const christmas = moment("2021-12-18").endOf("day");
+                const winter = moment("2022-02-12").endOf("day");
+                const spring = moment("2022-04-16").endOf("day");
+                const summer = moment("2022-07-16").endOf("day");
+                if (moment().isBefore(allSaints)) {
+                    finishDate = allSaints;
+                } else if (moment().isBefore(christmas)) {
+                    finishDate = christmas;
+                } else if (moment().isBefore(winter)) {
+                    finishDate = winter;
+                } else if (moment().isBefore(spring)) {
+                    finishDate = spring;
+                } else finishDate = summer;
+                break;
+            default:
+                finishDate = null;
+                break;
         }
-    }, [scheduleData, dateLimit]);
+        setBeginFinishDates({ beginDate: beginDate, finishDate: finishDate });
+    }, [timespan]);
     useEffect(() => {
-        if (stats.percentage === 100) setConfettiRunning(true);
-    }, [stats.percentage]);
+        if (scheduleData && beginFinishDates) updateScheduleStats();
+    }, [scheduleData, beginFinishDates]);
+    useEffect(() => {
+        if (scheduleStats.percentage === 100) setConfettiRunning(true);
+    }, [scheduleStats.percentage]);
+
+    const updateScheduleData = async () => {
+        const data = await getSchedule(token, selectedSchedule);
+        setScheduleData(data);
+    };
+    const updateStatusData = async () => {
+        const data = await getStatus(token);
+        setStatusData(data);
+    };
+    const updateScheduleStats = () => {
+        setScheduleStats(getScheduleStats(scheduleData.events, beginFinishDates.beginDate, beginFinishDates.finishDate, 17));
+    };
+    const updateStatusStats = () => {
+        setStatusStats(getStatusStats(statusData));
+    };
 
     const onConfettiComplete = () => {
         setConfettiRunning(false);
     };
     const handleDateLimitChange = (event, newValue) => {
         if (event.target.value !== "") {
-            setDateLimit(event.target.value);
+            setTimespan(event.target.value);
         } else {
-            setDateLimit(newValue);
+            setTimespan(newValue);
         }
     };
     const toggleSidebarMenu = () => {
         setSidebarMenuOpen(!sidebarMenuOpen);
+    };
+    const handleSelectedScheduleChange = (value) => {
+        if (value !== selectedSchedule) setSelectedSchedule(value);
     };
     const logOut = () => {
         toast.success("bbye u stinky man");
         deleteToken();
     };
 
+    const Calendar = () => {
+        return <>calendar</>;
+    };
+    const InfoPanel = () => {
+        return (
+            <Box sx={{ display: "flex", flexDirection: "column", textAlign: "center" }}>
+                <IconButton onClick={toggleSidebarMenu} sx={{ position: "absolute", right: "8px" }}>
+                    <Menu />
+                </IconButton>
+                {user && scheduleData ? (
+                    <>
+                        <Typography variant={"h4"}>{scheduleData.name}</Typography>
+                        <Subtitle value={`Dernière update : ${moment(scheduleData.lastUpdate).format("HH:mm:ss - DD/MM/YYYY")}`} />
+                        <Subtitle value={`Dernier essai : ${moment(scheduleData.lastTry).format("HH:mm:ss - DD/MM/YYYY")}`} />
+                        <Button sx={{ marginTop: 2, marginBottom: 1 }} variant="outlined">
+                            Add to Google Calendar
+                        </Button>
+                        <Button sx={{ marginTop: 1, marginBottom: 2 }} variant="outlined" disabled={user.role !== "admin"}>
+                            Update
+                        </Button>
+                    </>
+                ) : (
+                    <>
+                        <Skeleton variant={"text"} />
+                        <Skeleton variant={"text"} />
+                        <Skeleton variant={"rectangular"} />
+                        <Skeleton variant={"rectangular"} />
+                    </>
+                )}
+            </Box>
+        );
+    };
     const DateLimitMenu = () => {
         return isDesktop ? (
             <>
-                <Tabs centered variant={"fullWidth"} value={dateLimit} onChange={handleDateLimitChange}>
+                <Tabs centered variant={"fullWidth"} value={timespan} onChange={handleDateLimitChange}>
                     <Tab label={"Jour"} value={"day"} />
                     <Tab label={"Semaine"} value={"week"} />
                     <Tab label={"Mois"} value={"month"} />
@@ -898,7 +957,7 @@ function Dashboard({ token, deleteToken }) {
             </>
         ) : (
             <>
-                <Select value={dateLimit} onChange={handleDateLimitChange} fullWidth>
+                <Select value={timespan} onChange={handleDateLimitChange} fullWidth>
                     <MenuItem value={"day"}>Jour</MenuItem>
                     <MenuItem value={"week"}>Semaine</MenuItem>
                     <MenuItem value={"month"}>Mois</MenuItem>
@@ -910,10 +969,6 @@ function Dashboard({ token, deleteToken }) {
         );
     };
     const Cards = () => {
-        let downTimes = 0;
-        for (const check of aliveData) if (!check.alive) downTimes++;
-        const downtimePercentage = +(Math.round((downTimes * 100) / aliveData.length + "e+2") + "e-2");
-
         return (
             <Box
                 sx={{
@@ -923,92 +978,121 @@ function Dashboard({ token, deleteToken }) {
                     alignItems: "center",
                 }}
             >
-                <Card title={"Progression"}>
-                    <CircularProgressbar
-                        value={stats.percentage}
-                        text={`${stats.percentage}%`}
-                        styles={buildStyles({
-                            textColor: gradient(stats.percentage / 100).hex(),
-                            pathColor: gradient(stats.percentage / 100).hex(),
-                        })}
-                    />
-                </Card>
-                <Card title={"Nombre d'heures restantes"}>
-                    <Typography variant={"h5"} align={"center"} sx={{ margin: "auto", fontWeight: 600 }}>
-                        {minToStrHours(stats.minTotal - stats.minSpent)}
-                    </Typography>
-                    <Typography variant={"subtitle"} align={"center"} sx={{ margin: "auto" }}>
-                        /
-                    </Typography>
-                    <Typography variant={"subtitle"} align={"center"} sx={{ margin: "auto" }}>
-                        {minToStrHours(stats.minTotal)}
-                    </Typography>
-                </Card>
-                <Card title={"Nombre de cours après 17h"}>
-                    <Typography variant={"h5"} align={"center"} sx={{ margin: "auto", fontWeight: 600 }}>
-                        {numberOfClassAfter(scheduleData.events, moment().hours(17))}
-                    </Typography>
-                </Card>
-                <Card title={"EDT Status"}>
-                    {aliveData[aliveData.length - 1].alive ? (
-                        <Box
-                            sx={{
-                                color: "#66bb6a",
-                                height: 1,
-                                fontSize: 48,
-                                display: "flex",
-                                flexDirection: "column",
-                                alignItems: "center",
-                                justifyContent: "space-around",
-                            }}
-                            title={"u r not the father"}
-                        >
-                            <CheckCircle fontSize={"inherit"} />
-                            <Typography variant={"h5"}>UP</Typography>
-                        </Box>
-                    ) : (
-                        <Box
-                            sx={{
-                                color: "#f44336",
-                                height: 1,
-                                fontSize: 48,
-                                display: "flex",
-                                flexDirection: "column",
-                                alignItems: "center",
-                                justifyContent: "space-around",
-                            }}
-                            title={"u ARE the father"}
-                        >
-                            <Cancel fontSize={"inherit"} />
-                            <Typography variant={"h5"}>DOWN</Typography>
-                        </Box>
-                    )}
-                    <Subtitle value={`à ${moment(aliveData[aliveData.length - 1].date).format("HH:mm:ss")}`} centered />
-                </Card>
-                <Card title={"EDT Downtime"}>
-                    <CircularProgressbar
-                        value={downtimePercentage}
-                        text={`${downtimePercentage}%`}
-                        styles={buildStyles({
-                            textColor: gradient(downtimePercentage / 100).hex(),
-                            pathColor: gradient(downtimePercentage / 100).hex(),
-                        })}
-                    />
-                    <Subtitle value={`${minToStrHours(downTimes * 5)}/${minToStrHours(aliveData.length * 5)}`} sx={{ marginTop: 1 }} />
-                    <Subtitle value={`depuis ${moment(aliveData[0].date).format("HH:mm:ss - DD/MM/YYYY")}`} />
-                </Card>
+                {scheduleStats ? (
+                    <>
+                        <Card title={"Progression"}>
+                            <CircularProgressbar
+                                value={scheduleStats.percentage}
+                                text={`${scheduleStats.percentage}%`}
+                                styles={buildStyles({
+                                    textColor: gradient(scheduleStats.percentage / 100).hex(),
+                                    pathColor: gradient(scheduleStats.percentage / 100).hex(),
+                                })}
+                            />
+                        </Card>
+                        <Card title={"Nombre d'heures restantes"}>
+                            <Typography variant={"h5"} align={"center"} sx={{ margin: "auto", fontWeight: 600 }}>
+                                {minToStrHours(scheduleStats.minTotal - scheduleStats.minSpent)}
+                            </Typography>
+                            <Typography variant={"subtitle"} align={"center"} sx={{ margin: "auto" }}>
+                                /
+                            </Typography>
+                            <Typography variant={"subtitle"} align={"center"} sx={{ margin: "auto" }}>
+                                {minToStrHours(scheduleStats.minTotal)}
+                            </Typography>
+                        </Card>
+                        <Card title={"Nombre de cours après 17h"}>
+                            <Typography variant={"h5"} align={"center"} sx={{ margin: "auto", fontWeight: 600 }}>
+                                {scheduleStats.numOfClassAfter}
+                            </Typography>
+                        </Card>
+                    </>
+                ) : (
+                    <>
+                        <Skeleton>
+                            <Card />
+                            <Card />
+                            <Card />
+                        </Skeleton>
+                    </>
+                )}
+                {statusStats && (
+                    <>
+                        <Card title={"EDT Status"}>
+                            {statusStats.currentlyAlive ? (
+                                <Box
+                                    sx={{
+                                        color: "#66bb6a",
+                                        height: 1,
+                                        fontSize: 48,
+                                        display: "flex",
+                                        flexDirection: "column",
+                                        alignItems: "center",
+                                        justifyContent: "space-around",
+                                    }}
+                                    title={"u r not the father"}
+                                >
+                                    <CheckCircle fontSize={"inherit"} />
+                                    <Typography variant={"h5"}>UP</Typography>
+                                </Box>
+                            ) : (
+                                <Box
+                                    sx={{
+                                        color: "#f44336",
+                                        height: 1,
+                                        fontSize: 48,
+                                        display: "flex",
+                                        flexDirection: "column",
+                                        alignItems: "center",
+                                        justifyContent: "space-around",
+                                    }}
+                                    title={"u ARE the father"}
+                                >
+                                    <Cancel fontSize={"inherit"} />
+                                    <Typography variant={"h5"}>DOWN</Typography>
+                                </Box>
+                            )}
+                            <Subtitle value={`à ${moment(statusStats.lastUpdate).format("HH:mm:ss")}`} centered />
+                        </Card>
+                        <Card title={"EDT Downtime"}>
+                            <CircularProgressbar
+                                value={statusStats.percentage}
+                                text={`${statusStats.percentage}%`}
+                                styles={buildStyles({
+                                    textColor: gradient(statusStats.percentage / 100).hex(),
+                                    pathColor: gradient(statusStats.percentage / 100).hex(),
+                                })}
+                            />
+                            <Subtitle
+                                value={`${minToStrHours(statusStats.aliveTimes * 5)}/${minToStrHours(statusStats.numOfUpdates * 5)}`}
+                                sx={{ marginTop: 1 }}
+                            />
+                            <Subtitle value={`depuis ${moment(statusStats.firstUpdate).format("HH:mm:ss - DD/MM/YYYY")}`} />
+                        </Card>
+                    </>
+                )}
             </Box>
         );
     };
     const Dropdowns = () => {
-        return (
+        return scheduleStats ? (
             <Box>
-                <Dropdown title={"Cours"} data={stats.minBySubjects} />
-                <Dropdown title={"Type"} data={stats.minByType} />
-                <Dropdown title={"Prof"} data={stats.minByTeachers} />
-                <Dropdown title={"Salle"} data={stats.minByLocations} />
+                <Dropdown title={"Cours"} data={scheduleStats.minBySubjects} />
+                <Dropdown title={"Type"} data={scheduleStats.minByType} />
+                <Dropdown title={"Prof"} data={scheduleStats.minByTeachers} />
+                <Dropdown title={"Salle"} data={scheduleStats.minByLocations} />
             </Box>
+        ) : (
+            <>
+                <Skeleton variant={"rectangle"} />
+                <Skeleton variant={"rectangle"} />
+                <Skeleton variant={"rectangle"} />
+                <Skeleton variant={"rectangle"} />
+            </>
         );
+    };
+    const Confettis = () => {
+        return confettiRunning && <Confetti recycle={false} numberOfPieces={500} onConfettiComplete={onConfettiComplete} />;
     };
     const SidebarMenu = () => {
         return (
@@ -1022,14 +1106,27 @@ function Dashboard({ token, deleteToken }) {
                         <Typography align={"center"} variant={"h4"}>
                             EDT(s)
                         </Typography>
-                        <ButtonGroup orientation={"vertical"} sx={{ width: "fit-content", marginTop: 1, marginBottom: 1 }}>
-                            {user.schedules.map((value) => {
-                                return <Button variant={selectedSchedule === value ? "contained" : "outlined"}>{value}</Button>;
-                            })}
-                        </ButtonGroup>
-                        <Divider />
-                        <Subtitle value={`Connecté en tant que ${user.role}.`} />
-                        <Link href={"#"} variant={"subtitle2"} sx={{ fontSize: 12, color: "#808080" }} onClick={logOut}>
+                        {user && selectedSchedule ? (
+                            <>
+                                <ButtonGroup orientation={"vertical"} sx={{ width: "fit-content", marginTop: 1, marginBottom: 1 }}>
+                                    {user.schedules.map((value) => {
+                                        return (
+                                            <Button
+                                                variant={selectedSchedule === value ? "contained" : "outlined"}
+                                                onClick={() => handleSelectedScheduleChange(value)}
+                                            >
+                                                {value}
+                                            </Button>
+                                        );
+                                    })}
+                                </ButtonGroup>
+                                <Divider />
+                                <Subtitle value={`Connecté en tant que ${user.role}.`} />
+                            </>
+                        ) : (
+                            <Skeleton variant="rectangular" width={200} height={100} />
+                        )}
+                        <Link href={""} variant={"subtitle2"} sx={{ fontSize: 12, color: "#808080" }} onClick={logOut}>
                             Deconnexion
                         </Link>
                     </Box>
@@ -1046,43 +1143,22 @@ function Dashboard({ token, deleteToken }) {
 
     return (
         <Container maxWidth={false}>
-            {scheduleData && aliveData && (
-                <>
-                    <Grid container spacing={2} justifyContent={"center"} alignItems={"center"}>
-                        <Grid item xs={12} sm={9}>
-                            calendar
-                        </Grid>
-                        <Grid item xs={12} sm={3}>
-                            <Box sx={{ display: "flex", flexDirection: "column", textAlign: "center" }}>
-                                <IconButton onClick={toggleSidebarMenu} sx={{ position: "absolute", right: "8px" }}>
-                                    <Menu />
-                                </IconButton>
-                                <Typography variant={"h4"}>{scheduleData.name}</Typography>
-                                <Subtitle value={`Dernière update : ${moment(scheduleData.lastUpdate).format("HH:mm:ss - DD/MM/YYYY")}`} />
-                                <Subtitle value={`Dernier essai : ${moment(scheduleData.lastTry).format("HH:mm:ss - DD/MM/YYYY")}`} />
-                                <Button sx={{ marginTop: 2, marginBottom: 1 }} variant="outlined">
-                                    Add to Google Calendar
-                                </Button>
-                                <Button sx={{ marginTop: 1, marginBottom: 2 }} variant="outlined" disabled={user.role !== "admin"}>
-                                    Update
-                                </Button>
-                            </Box>
-                        </Grid>
-                    </Grid>
-                    <Divider />
-                    <Container maxWidth={false} sx={{ padding: 2 }}>
-                        {DateLimitMenu()}
-                        {stats && (
-                            <>
-                                {Cards()}
-                                {Dropdowns()}
-                            </>
-                        )}
-                    </Container>
-                    {SidebarMenu()}
-                    {confettiRunning && <Confetti recycle={false} numberOfPieces={500} onConfettiComplete={onConfettiComplete} />}
-                </>
-            )}
+            <Grid container spacing={2} justifyContent={"center"} alignItems={"center"}>
+                <Grid item xs={12} sm={9}>
+                    {Calendar()}
+                </Grid>
+                <Grid item xs={12} sm={3}>
+                    {InfoPanel()}
+                </Grid>
+            </Grid>
+            <Divider />
+            <Container maxWidth={false} sx={{ padding: 2 }}>
+                {DateLimitMenu()}
+                {Cards()}
+                {Dropdowns()}
+            </Container>
+            {Confettis()}
+            {SidebarMenu()}
         </Container>
     );
 }
