@@ -139,15 +139,15 @@ const numberOfClassAfter = (events, limitHour) => {
     let count = 0;
     for (const event of events) {
         const limitDate = moment(event.end);
-        limitDate.hours(limitHour.hours());
-        limitDate.minutes(limitHour.minutes());
+        limitDate.hours(limitHour);
+        limitDate.minutes(0);
 
         if (limitDate.isBefore(moment(event.end))) count++;
     }
     return count;
 };
 
-const getStats = (events, beginDate, finishDate) => {
+const getScheduleStats = (events, beginDate, finishDate, limitHour) => {
     const { total, spent } = totalAndSpentMinutes(events, beginDate, finishDate);
 
     return {
@@ -158,6 +158,25 @@ const getStats = (events, beginDate, finishDate) => {
         minByType: minutesByType(events, beginDate, finishDate),
         minByTeachers: minutesByTeachers(events, beginDate, finishDate),
         minByLocations: minutesByLocations(events, beginDate, finishDate),
+        numOfClassAfter: numberOfClassAfter(events, limitHour),
+    };
+};
+
+const getStatusStats = (data) => {
+    let aliveTimes = 0;
+
+    for (const status of data) {
+        if (status.alive) aliveTimes++;
+    }
+    const percentage = (aliveTimes * 100) / data.length;
+
+    return {
+        percentage: +(Math.round(percentage + "e+2") + "e-2"),
+        aliveTimes: aliveTimes,
+        currentlyAlive: data[data.length - 1].alive,
+        firstUpdate: data[0].date,
+        lastUpdate: data[data.length - 1].date,
+        numOfUpdates: data.length,
     };
 };
 
@@ -168,4 +187,4 @@ const minToStrHours = (min) => {
     return hours + "h";
 };
 
-export { getStats, minToStrHours, numberOfClassAfter };
+export { getScheduleStats, getStatusStats, minToStrHours };
