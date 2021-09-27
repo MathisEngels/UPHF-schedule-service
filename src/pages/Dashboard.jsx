@@ -224,10 +224,7 @@ function Dashboard({ token, deleteToken }) {
                         <Typography variant={"h4"}>{scheduleData.name}</Typography>
                         <Subtitle value={`Dernière update : ${moment(scheduleData.lastUpdate).format("HH:mm:ss - DD/MM/YYYY")}`} />
                         <Subtitle value={`Dernier essai : ${moment(scheduleData.lastTry).format("HH:mm:ss - DD/MM/YYYY")}`} />
-                        <Button sx={{ marginTop: 2, marginBottom: 1 }} variant="outlined">
-                            Add to Google Calendar
-                        </Button>
-                        <Button sx={{ marginTop: 1, marginBottom: 2 }} variant="outlined" disabled={user.role !== "admin" || updateToastID} onClick={handleUpdate}>
+                        <Button sx={{ marginTop: 2, marginBottom: 2 }} variant="outlined" disabled={user.role !== "admin" || updateToastID} onClick={handleUpdate}>
                             Update
                         </Button>
                     </>
