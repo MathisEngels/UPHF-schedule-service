@@ -148,6 +148,7 @@ const numberOfClassAfter = (events, limitHour) => {
 };
 
 const getScheduleStats = (events, beginDate, finishDate, limitHour) => {
+    if (!events) return null;
     const { total, spent } = totalAndSpentMinutes(events, beginDate, finishDate);
 
     return {
@@ -163,6 +164,7 @@ const getScheduleStats = (events, beginDate, finishDate, limitHour) => {
 };
 
 const getStatusStats = (data) => {
+    if (!data) return null;
     let aliveTimes = 0;
 
     for (const status of data) {

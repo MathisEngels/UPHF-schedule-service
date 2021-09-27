@@ -38,12 +38,17 @@ class UPHFScheduleScraper {
     async run() {
         const success = await this.downloadFile();
         if (success) {
-            const filename = (await fs.promises.readdir(this.downloadFolderPath))[0];
-            const events = this.parseICS(path.join(this.downloadFolderPath, filename));
-
-            await this.updateDB(events);
-            this.clearDownloadFolder();
-            this.setNextTimeout();
+            try {
+                const filename = (await fs.promises.readdir(this.downloadFolderPath))[0];
+                const events = await this.parseICS(path.join(this.downloadFolderPath, filename));
+    
+                await this.updateDB(events);
+                this.clearDownloadFolder();
+                this.setNextTimeout();
+            } catch (err) {
+                console.log(this.getClassname() + " | Error while running");
+                console.log(err);
+            }
         } else {
             await this.updateDB();
             this.setNextTimeout("RETRY");
@@ -99,13 +104,14 @@ class UPHFScheduleScraper {
                 };
             }
             await fs.promises.writeFile(this.dataFilePath, JSON.stringify(this.data));
-        } catch (error) {
-            console.log("Error while trying to write to DB.");
+        } catch (err) {
+            console.log(this.getClassname() + " | Error while writing to DB");
+            console.log(err);
         }
     }
 
-    parseICS(filePath) {
-        const rawEvents = ical.sync.parseFile(filePath);
+    async parseICS(filePath) {
+        const rawEvents = await ical.async.parseFile(filePath);
 
         const events = [];
         for (const rawEvent of Object.values(rawEvents)) {
@@ -196,9 +202,9 @@ class UPHFScheduleScraper {
         } catch {
             try {
                 await fs.promises.mkdir(this.downloadFolderPath, { recursive: true });
-            } catch {
-                console.log("Error while creating the download folder");
-                process.exit(1);
+            } catch (err) {
+                console.log(this.getClassname() + " | Error while creating the download folder");
+                console.log(err);
             }
         }
 
@@ -208,23 +214,22 @@ class UPHFScheduleScraper {
             try {
                 await fs.promises.mkdir(this.dataFolderPath, { recursive: true });
             } catch {
-                console.log("Error while creating the data folder");
-                process.exit(1);
+                console.log(this.getClassname() + " | Error while creating the data folder");
+                console.log(err);
             }
         }
     }
 
-    // TODO Switch it to async version
     clearDownloadFolder() {
-        fs.readdir(this.downloadFolderPath, (err, files) => {
-            if (err) throw err;
-
+        try {
+            const files = await fs.promises.readdir(this.downloadFolderPath);
             for (const file of files) {
-                fs.unlink(path.join(this.downloadFolderPath, file), (err) => {
-                    if (err) throw err;
-                });
+                await fs.promises.unlink(path.join(this.downloadFolderPath, file));
             }
-        });
+        } catch (err) {
+            console.log(this.getClassname() + " | Error while clearing download folder");
+            console.log(err);
+        }
     }
 }
 

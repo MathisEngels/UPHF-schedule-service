@@ -80,7 +80,6 @@ class UPHFStatusChecker {
                 await fs.promises.mkdir(this.dataFolderPath, { recursive: true });
             } catch {
                 console.log("Error while creating the data folder");
-                process.exit(1);
             }
         }
     }

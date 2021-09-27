@@ -3,21 +3,20 @@ import { Accordion, AccordionDetails, AccordionSummary, Box, Divider, Typography
 import { minToStrHours } from "../utils/algorithms";
 
 function Dropdown(props) {
+    if (!props.data || props.data.length === 0) return <></>;
     return (
         <Accordion>
             <AccordionSummary expandIcon={<ExpandMore />}>
                 <Box sx={{ width: 1, display: "flex", justifyContent: "space-between" }}>
                     <Typography variant={"h6"}>{props.title}</Typography>
                     <Box sx={{ marginRight: 2, display: "flex", alignItems: "center" }}>
-                        {props.data.length > 0 ? (
+                        {props.data.length > 0 && (
                             <>
                                 <Typography align={"right"}>
                                     {props.data[0].key} - {minToStrHours(props.data[0].spent)}/{minToStrHours(props.data[0].total)}
                                 </Typography>
                                 <CheckCircle color={props.data[0].spent === props.data[0].total ? "success" : "disabled"} sx={{ marginLeft: 2 }} />
                             </>
-                        ) : (
-                            <></>
                         )}
                     </Box>
                 </Box>

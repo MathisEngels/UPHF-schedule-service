@@ -74,7 +74,6 @@ function Dashboard({ token, deleteToken }) {
         verifyToken();
         setUser(jwt.decode(token));
         getStatusData();
-
     }, []);
 
     useEffect(() => {
@@ -142,11 +141,19 @@ function Dashboard({ token, deleteToken }) {
 
     const getScheduleData = async () => {
         const data = await getSchedule(token, selectedSchedule);
-        setScheduleData(data);
+        if (!data) {
+            toast.error("u brok the internet");
+        } else {
+            setScheduleData(data);
+        }
     };
     const getStatusData = async () => {
         const data = await getStatus(token);
-        setStatusData(data);
+        if (!data) {
+            toast.error("omg u h4k3r stop");
+        } else {
+            setStatusData(data);
+        }
     };
     const updateScheduleData = async () => {
         const success = await updateSchedule(token, selectedSchedule);
