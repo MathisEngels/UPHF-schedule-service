@@ -172,8 +172,8 @@ class UPHFScheduleScraper {
             downloadPath: this.downloadFolderPath,
         });
         await page.goto("https://cas.uphf.fr/cas/login?service=https://portail.uphf.fr/uPortal/Login", { waitUntil: "networkidle2" });
-        await page.type("#username", process.env[`${this.classname}_USERNAME`]);
-        await page.type("#password", process.env[`${this.classname}_PASSWORD`]);
+        await page.type("#username", process.env[`${this.classname}_USERNAME`].toString());
+        await page.type("#password", process.env[`${this.classname}_PASSWORD`].toString());
         await page.keyboard.press("Enter");
         await sleep(1000);
         try {
