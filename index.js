@@ -74,7 +74,7 @@ app.post("/api/auth", async (req, res) => {
         }
 
         const token = jwt.sign({ uuid: uuidv4(), role: role, schedules: schedules }, process.env.JWT_SECRET, { expiresIn: "365 days" });
-        return res.status(200).json({ token: token });
+        return res.status(200).json(token);
     }
     return res.status(401).end();
 });
@@ -125,5 +125,5 @@ app.listen(process.env.PORT, async () => {
     console.log(`Server running on port ${process.env.PORT}`);
     await statusChecker.start();
     await scraperManager.init();
-    // await scraperManager.run();
+    await scraperManager.run();
 });
