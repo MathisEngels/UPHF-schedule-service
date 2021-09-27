@@ -7,13 +7,18 @@ function Login({ setToken }) {
     const handleSubmit = async (e) => {
         e.preventDefault();
         const data = new FormData(e.currentTarget);
+        const toastId = toast.loading("Loading...");
         const token = await login(data.get("password"));
 
         if (token) {
             setToken(token);
-            toast.success("u r not that stupid");
+            toast.success("u r not that stupid", {
+                id: toastId,
+            });
         } else {
-            toast.error("who are u 👁️👄👁️");
+            toast.error("who are u 👁️👄👁️", {
+                id: toastId,
+            });
         }
     };
 
