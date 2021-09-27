@@ -28,7 +28,7 @@ import Confetti from "react-confetti";
 import toast from "react-hot-toast";
 import { Card, Dropdown, Subtitle } from "../components";
 import { getScheduleStats, getStatusStats, minToStrHours } from "../utils/algorithms";
-import { getSchedule, getStatus, verify } from "../utils/api";
+import { getSchedule, getStatus, updateSchedule, verify } from "../utils/api";
 import "./Dashboard.css";
 
 function Dashboard({ token, deleteToken }) {
@@ -61,6 +61,7 @@ function Dashboard({ token, deleteToken }) {
         firstUpdate: null,
         numOfUpdates: 0,
     });
+    const [updateToastID, setUpdateToastID] = useState(null);
 
     useEffect(() => {
         async function verifyToken() {
@@ -72,7 +73,7 @@ function Dashboard({ token, deleteToken }) {
         }
         verifyToken();
         setUser(jwt.decode(token));
-        updateStatusData();
+        getStatusData();
 
     }, []);
 
@@ -80,7 +81,7 @@ function Dashboard({ token, deleteToken }) {
         if (user) setSelectedSchedule(user.schedules[0]);
     }, [user]);
     useEffect(() => {
-        if (selectedSchedule) updateScheduleData();
+        if (selectedSchedule) getScheduleData();
     }, [selectedSchedule]);
     useEffect(() => {
         if (statusData) updateStatusStats();
@@ -139,16 +140,35 @@ function Dashboard({ token, deleteToken }) {
         if (scheduleStats.percentage === 100) setConfettiRunning(true);
     }, [scheduleStats.percentage]);
 
-    const updateScheduleData = async () => {
+    const getScheduleData = async () => {
         const data = await getSchedule(token, selectedSchedule);
         setScheduleData(data);
     };
-    const updateStatusData = async () => {
+    const getStatusData = async () => {
         const data = await getStatus(token);
         setStatusData(data);
     };
+    const updateScheduleData = async () => {
+        const success = await updateSchedule(token, selectedSchedule);
+        if (success) {
+            getScheduleData();
+        } else if (updateToastID) {
+            toast.error("idk man the thing is broken", {
+                id: updateToastID,
+            });
+
+            setUpdateToastID(null);
+        }
+    };
     const updateScheduleStats = () => {
         setScheduleStats(getScheduleStats(scheduleData.events, beginFinishDates.beginDate, beginFinishDates.finishDate, 17));
+        if (updateToastID) {
+            toast.success("tada new data", {
+                id: updateToastID,
+            });
+
+            setUpdateToastID(null);
+        }
     };
     const updateStatusStats = () => {
         setStatusStats(getStatusStats(statusData));
@@ -157,6 +177,11 @@ function Dashboard({ token, deleteToken }) {
     const onConfettiComplete = () => {
         setConfettiRunning(false);
     };
+    const handleUpdate = () => {
+        const toastID = toast.loading("updating plz wait");
+        setUpdateToastID(toastID);
+        updateScheduleData();
+    }
     const handleDateLimitChange = (event, newValue) => {
         if (event.target.value !== "") {
             setTimespan(event.target.value);
@@ -168,7 +193,10 @@ function Dashboard({ token, deleteToken }) {
         setSidebarMenuOpen(!sidebarMenuOpen);
     };
     const handleSelectedScheduleChange = (value) => {
-        if (value !== selectedSchedule) setSelectedSchedule(value);
+        if (value !== selectedSchedule) {
+            setSelectedSchedule(value);
+            toggleSidebarMenu();
+        }
     };
     const logOut = () => {
         toast.success("bbye u stinky man");
@@ -192,7 +220,7 @@ function Dashboard({ token, deleteToken }) {
                         <Button sx={{ marginTop: 2, marginBottom: 1 }} variant="outlined">
                             Add to Google Calendar
                         </Button>
-                        <Button sx={{ marginTop: 1, marginBottom: 2 }} variant="outlined" disabled={user.role !== "admin"}>
+                        <Button sx={{ marginTop: 1, marginBottom: 2 }} variant="outlined" disabled={user.role !== "admin" || updateToastID} onClick={handleUpdate}>
                             Update
                         </Button>
                     </>
@@ -406,7 +434,7 @@ function Dashboard({ token, deleteToken }) {
     };
 
     return (
-        <Container maxWidth={false}>
+        <Container maxWidth={false} sx={{ padding: 3 }}>
             <Grid container spacing={2} justifyContent={"center"} alignItems={"center"}>
                 <Grid item xs={12} sm={9}>
                     {Calendar()}
