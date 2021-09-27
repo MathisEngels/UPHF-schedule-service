@@ -1,6 +1,7 @@
 const fs = require("fs");
 const path = require("path");
 const axios = require("axios");
+const logger = require("../logger");
 
 // TODO Switch to TS fast
 class UPHFStatusChecker {
@@ -13,6 +14,7 @@ class UPHFStatusChecker {
     }
 
     async start() {
+        logger.info(`StatusChecker | Starting`);
         await this.createFoldersIfNeeded();
         await this.loadDB();
 
@@ -21,6 +23,7 @@ class UPHFStatusChecker {
     }
 
     async stop() {
+        logger.info(`StatusChecker | Stoping`);
         this.stopInterval();
     }
 
@@ -44,6 +47,7 @@ class UPHFStatusChecker {
     }
 
     startInterval() {
+        logger.info(`StatusChecker | Interval set to ${this.interval} minutes`);
         this.intervalID = setInterval(() => this.check(), this.interval * 1000 * 60);
     }
 
@@ -56,7 +60,9 @@ class UPHFStatusChecker {
         try {
             await fs.promises.access(this.dataFilePath);
             this.data = JSON.parse(await fs.promises.readFile(this.dataFilePath));
+            logger.info(`StatusChecker | Data loaded`);
         } catch {
+            logger.warn(`StatusChecker | DB empty`);
             this.data = [];
         }
     }
@@ -67,8 +73,9 @@ class UPHFStatusChecker {
             // Maybe just keep the past 3 months too.
             this.data.push({ date: new Date().toJSON(), alive: status });
             await fs.promises.writeFile(this.dataFilePath, JSON.stringify(this.data));
-        } catch (error) {
-            console.log("Error while trying to write to DB.");
+        } catch (err) {
+            logger.error(`StatusChecker | Error while trying to write to DB`);
+            logger.error(err);
         }
     }
 
@@ -78,8 +85,9 @@ class UPHFStatusChecker {
         } catch {
             try {
                 await fs.promises.mkdir(this.dataFolderPath, { recursive: true });
-            } catch {
-                console.log("Error while creating the data folder");
+            } catch (err) {
+                logger.error(`StatusChecker | Error while creating data folder`);
+                logger.error(err);
             }
         }
     }

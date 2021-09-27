@@ -2,6 +2,7 @@ const fs = require("fs");
 const path = require("path");
 const puppeteer = require("puppeteer");
 const ical = require("node-ical");
+const logger = require("../logger");
 const { sleep, capitalizeTheFirstLetterOfEachWord, capitalizeFirstLetter } = require("./utils");
 
 // TODO Switch to TS fast
@@ -18,24 +19,34 @@ class UPHFScheduleScraper {
     }
 
     async init() {
+        logger.info(`Scraper | ${this.getClassname()} | Initializing`);
         await this.createFoldersIfNeeded();
         await this.loadData();
     }
 
     async start() {
+        logger.info(`Scraper | ${this.getClassname()} | Starting`);
         await this.run();
     }
 
     stop() {
+        logger.info(`Scraper | ${this.getClassname()} | Stoping`);
         this.stopTimeout();
     }
 
     async restart() {
+        logger.info(`Scraper | ${this.getClassname()} | Restarting`);
         this.stop();
         await this.start();
     }
 
     async run() {
+        if (!process.env[`${this.classname}_USERNAME`] || !process.env[`${this.classname}_PASSWORD`]) {
+            logger.error(`Scraper | ${this.getClassname()} | Missing credidentials. Stoping`);
+            this.stop();
+            return;
+        }
+
         const success = await this.downloadFile();
         if (success) {
             try {
@@ -43,11 +54,11 @@ class UPHFScheduleScraper {
                 const events = await this.parseICS(path.join(this.downloadFolderPath, filename));
     
                 await this.updateDB(events);
-                this.clearDownloadFolder();
+                await this.clearDownloadFolder();
                 this.setNextTimeout();
             } catch (err) {
-                console.log(this.getClassname() + " | Error while running");
-                console.log(err);
+                logger.error(`Scraper | ${this.getClassname()} | Error while reading downloaded file`);
+                logger.error(err);
             }
         } else {
             await this.updateDB();
@@ -71,6 +82,7 @@ class UPHFScheduleScraper {
     setNextTimeout(type) {
         const intervalTime = type === "RETRY" ? this.retryInterval : this.successInterval;
         this.timeoutID = setTimeout(() => this.run(), intervalTime * 1000 * 60);
+        logger.info(`Scraper | ${this.getClassname()} | New timeout set. Trigger each ${intervalTime} min`);
     }
 
     stopTimeout() {
@@ -82,7 +94,9 @@ class UPHFScheduleScraper {
         try {
             await fs.promises.access(this.dataFilePath);
             this.data = JSON.parse(await fs.promises.readFile(this.dataFilePath));
+            logger.info(`Scraper | ${this.getClassname()} | Data loaded`);
         } catch {
+            logger.info(`Scraper | ${this.getClassname()} | DB is empty`);
             this.data = null;
         }
     }
@@ -104,9 +118,10 @@ class UPHFScheduleScraper {
                 };
             }
             await fs.promises.writeFile(this.dataFilePath, JSON.stringify(this.data));
+            logger.info(`Scraper | ${this.getClassname()} | Updated DB`);
         } catch (err) {
-            console.log(this.getClassname() + " | Error while writing to DB");
-            console.log(err);
+            logger.error(`Scraper | ${this.getClassname()} | Error while writing to DB`);
+            logger.error(err);
         }
     }
 
@@ -168,7 +183,7 @@ class UPHFScheduleScraper {
     }
 
     async downloadFile() {
-        this.clearDownloadFolder();
+        await this.clearDownloadFolder();
         const browser = await puppeteer.launch({
             headless: true,
         });
@@ -190,9 +205,11 @@ class UPHFScheduleScraper {
             await hrefElement.click();
             await sleep(5000);
         } catch {
+            logger.warn(`Scraper | ${this.getClassname()} | Failed to download ICS. Vtmob must be down`);
             return false;
         }
         await browser.close();
+        logger.info(`Scraper | ${this.getClassname()} | Succesfully downloaded new ICS`)
         return true;
     }
 
@@ -203,8 +220,8 @@ class UPHFScheduleScraper {
             try {
                 await fs.promises.mkdir(this.downloadFolderPath, { recursive: true });
             } catch (err) {
-                console.log(this.getClassname() + " | Error while creating the download folder");
-                console.log(err);
+                logger.error("Scraper | " + this.getClassname() + " | Error while writing to DB");
+                logger.error(err);
             }
         }
 
@@ -213,22 +230,22 @@ class UPHFScheduleScraper {
         } catch {
             try {
                 await fs.promises.mkdir(this.dataFolderPath, { recursive: true });
-            } catch {
-                console.log(this.getClassname() + " | Error while creating the data folder");
-                console.log(err);
+            } catch (err) {
+                logger.error("Scraper | " + this.getClassname() + " | Error while writing to DB");
+                logger.error(err);
             }
         }
     }
 
-    clearDownloadFolder() {
+    async clearDownloadFolder() {
         try {
             const files = await fs.promises.readdir(this.downloadFolderPath);
             for (const file of files) {
                 await fs.promises.unlink(path.join(this.downloadFolderPath, file));
             }
         } catch (err) {
-            console.log(this.getClassname() + " | Error while clearing download folder");
-            console.log(err);
+            logger.error("Scraper | " + this.getClassname() + " | Error while writing to DB");
+            logger.error(err);
         }
     }
 }

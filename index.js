@@ -6,6 +6,7 @@ const { v4: uuidv4 } = require("uuid");
 const UPHFScheduleScraper = require("./uphf/scraper");
 const UPHFStatusChecker = require("./uphf/statusChecker");
 const ScraperManager = require("./uphf/scraperManager");
+const logger = require("./logger");
 require("dotenv").config();
 
 const downloadPath = path.join(__dirname, "download");
@@ -122,8 +123,9 @@ app.get("*", (_, res) => {
 });
 
 app.listen(process.env.PORT, async () => {
-    console.log(`Server running on port ${process.env.PORT}`);
+    logger.info(`Server running on port ${process.env.PORT}`);
     await statusChecker.start();
     await scraperManager.init();
     await scraperManager.run();
+    logger.info(`System ready`);
 });
