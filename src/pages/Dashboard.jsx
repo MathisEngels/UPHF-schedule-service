@@ -1,4 +1,8 @@
 /* eslint-disable react-hooks/exhaustive-deps */
+import FullCalendar from '@fullcalendar/react';
+import momentPlugin from '@fullcalendar/moment'
+import timeGridPlugin from '@fullcalendar/timegrid';
+import frLocale from '@fullcalendar/core/locales/fr';
 import { Cancel, CheckCircle, ChevronLeft, ChevronRight, Menu } from "@mui/icons-material";
 import {
     Box,
@@ -16,7 +20,7 @@ import {
     Tab,
     Tabs,
     Typography,
-    useMediaQuery,
+    useMediaQuery
 } from "@mui/material";
 import chroma from "chroma-js";
 import jwt from "jsonwebtoken";
@@ -30,10 +34,17 @@ import { Card, Dropdown, Subtitle } from "../components";
 import { getScheduleStats, getStatusStats, minToStrHours } from "../utils/algorithms";
 import { getSchedule, getStatus, updateSchedule, verify } from "../utils/api";
 import "./Dashboard.css";
+import "./Test.css";
 
 function Dashboard({ token, deleteToken }) {
     const gradient = chroma.scale(["#e5405e", "#ffdb3a", "#3fffa2"]);
     const isDesktop = useMediaQuery("(min-width:750px)");
+    const events = [{
+        title: 'This is a Material Design event!',
+        start: moment().toISOString(),
+        end: moment().add(2, "hours").toISOString(),
+        color: '#C2185B'
+    }]
 
     const [sidebarMenuOpen, setSidebarMenuOpen] = useState(false);
     const [confettiRunning, setConfettiRunning] = useState(false);
@@ -211,7 +222,21 @@ function Dashboard({ token, deleteToken }) {
     };
 
     const Calendar = () => {
-        return <>calendar</>;
+        return (
+        <>
+            <FullCalendar
+                plugins={[ momentPlugin, timeGridPlugin ]}
+                initialView="timeGridWeek"
+                height={"auto"}
+                locale={frLocale}
+                weekends={false}
+                allDaySlot={false}
+                events={events}
+                nowIndicator
+                slotMinTime={"07:00:00"}
+                slotMaxTime={"19:00:00"}
+            />
+        </>);
     };
     const InfoPanel = () => {
         return (
