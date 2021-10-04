@@ -19,13 +19,14 @@ import {
     Skeleton,
     Tab,
     Tabs,
+    Tooltip,
     Typography,
-    useMediaQuery
+    useMediaQuery,
 } from "@mui/material";
 import chroma from "chroma-js";
 import jwt from "jsonwebtoken";
 import moment from "moment";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { buildStyles, CircularProgressbar } from "react-circular-progressbar";
 import "react-circular-progressbar/dist/styles.css";
 import Confetti from "react-confetti";
@@ -34,17 +35,12 @@ import { Card, Dropdown, Subtitle } from "../components";
 import { getScheduleStats, getStatusStats, minToStrHours } from "../utils/algorithms";
 import { getSchedule, getStatus, updateSchedule, verify } from "../utils/api";
 import "./Dashboard.css";
-import "./Test.css";
+//import "./Test.css";
 
 function Dashboard({ token, deleteToken }) {
     const gradient = chroma.scale(["#e5405e", "#ffdb3a", "#3fffa2"]);
     const isDesktop = useMediaQuery("(min-width:750px)");
-    const events = [{
-        title: 'This is a Material Design event!',
-        start: moment().toISOString(),
-        end: moment().add(2, "hours").toISOString(),
-        color: '#C2185B'
-    }]
+    const calendarRef = useRef(null);
 
     const [sidebarMenuOpen, setSidebarMenuOpen] = useState(false);
     const [confettiRunning, setConfettiRunning] = useState(false);
@@ -53,6 +49,7 @@ function Dashboard({ token, deleteToken }) {
     const [timespan, setTimespan] = useState("year");
     const [beginFinishDates, setBeginFinishDates] = useState();
     const [scheduleData, setScheduleData] = useState();
+    const [events, setEvents] = useState();
     const [statusData, setStatusData] = useState();
     const [scheduleStats, setScheduleStats] = useState({
         percentage: 0,
@@ -86,7 +83,13 @@ function Dashboard({ token, deleteToken }) {
         setUser(jwt.decode(token));
         getStatusData();
     }, []);
-
+    useEffect(() => {
+        if (isDesktop) {
+            calendarRef.current.getApi().changeView("timeGridWeek");
+        } else {
+            calendarRef.current.getApi().changeView("timeGridDay");
+        }
+    }, [isDesktop]);
     useEffect(() => {
         if (user) setSelectedSchedule(user.schedules[0]);
     }, [user]);
@@ -94,7 +97,9 @@ function Dashboard({ token, deleteToken }) {
         if (selectedSchedule) getScheduleData();
     }, [selectedSchedule]);
     useEffect(() => {
-        if (statusData) updateStatusStats();
+        if (statusData) {
+            updateStatusStats();
+        }
     }, [statusData]);
     useEffect(() => {
         let beginDate;
@@ -143,6 +148,11 @@ function Dashboard({ token, deleteToken }) {
         }
         setBeginFinishDates({ beginDate: beginDate, finishDate: finishDate });
     }, [timespan]);
+    useEffect(() => {
+        if (scheduleData) {
+            setEvents(scheduleData.events);
+        }
+    }, [scheduleData]);
     useEffect(() => {
         if (scheduleData && beginFinishDates) updateScheduleStats();
     }, [scheduleData, beginFinishDates]);
@@ -199,7 +209,7 @@ function Dashboard({ token, deleteToken }) {
         const toastID = toast.loading("updating plz wait");
         setUpdateToastID(toastID);
         updateScheduleData();
-    }
+    };
     const handleDateLimitChange = (event, newValue) => {
         if (event.target.value !== "") {
             setTimespan(event.target.value);
@@ -223,20 +233,51 @@ function Dashboard({ token, deleteToken }) {
 
     const Calendar = () => {
         return (
-        <>
-            <FullCalendar
-                plugins={[ momentPlugin, timeGridPlugin ]}
-                initialView="timeGridWeek"
-                height={"auto"}
-                locale={frLocale}
-                weekends={false}
-                allDaySlot={false}
-                events={events}
-                nowIndicator
-                slotMinTime={"07:00:00"}
-                slotMaxTime={"19:00:00"}
-            />
-        </>);
+            <>
+                <FullCalendar
+                    plugins={[momentPlugin, timeGridPlugin]}
+                    initialView={"timeGridWeek"}
+                    height={"auto"}
+                    locale={frLocale}
+                    weekends={false}
+                    allDaySlot={false}
+                    events={events}
+                    eventContent={renderEventContent}
+                    nowIndicator
+                    slotMinTime={"07:00:00"}
+                    slotMaxTime={"19:00:00"}
+                    ref={calendarRef}
+                />
+            </>
+        );
+    };
+    const renderEventContent = (props) => {
+        return (
+            <Tooltip
+                followCursor
+                title={
+                    <Box sx={{ padding: "2px", textAlign: "center" }}>
+                        <Typography sx={{ fontWeight: 600 }}>{props.event.extendedProps.name}</Typography>
+                        <Typography sx={{ fontWeight: 100, fontSize: 12, fontStyle: "italic" }}>{props.event.extendedProps.location}</Typography>
+                        <Typography sx={{ fontWeight: 100, fontSize: 12, fontStyle: "italic" }}>
+                            {props.event.extendedProps.type} - {props.event.extendedProps.teacher}
+                        </Typography>
+                    </Box>
+                }
+            >
+                <Box sx={{ padding: "2px", textAlign: "center", height: 1, width: 1, overflow: "hidden" }}>
+                    <Typography noWrap sx={{ fontWeight: 600 }}>
+                        {props.event.extendedProps.name}
+                    </Typography>
+                    <Typography noWrap sx={{ fontWeight: 100, fontSize: 12, fontStyle: "italic" }}>
+                        {props.event.extendedProps.location}
+                    </Typography>
+                    <Typography noWrap sx={{ fontWeight: 100, fontSize: 12, fontStyle: "italic" }}>
+                        {props.event.extendedProps.type} - {props.event.extendedProps.teacher}
+                    </Typography>
+                </Box>
+            </Tooltip>
+        );
     };
     const InfoPanel = () => {
         return (
@@ -249,7 +290,12 @@ function Dashboard({ token, deleteToken }) {
                         <Typography variant={"h4"}>{scheduleData.name}</Typography>
                         <Subtitle value={`Dernière update : ${moment(scheduleData.lastUpdate).format("HH:mm:ss - DD/MM/YYYY")}`} />
                         <Subtitle value={`Dernier essai : ${moment(scheduleData.lastTry).format("HH:mm:ss - DD/MM/YYYY")}`} />
-                        <Button sx={{ marginTop: 2, marginBottom: 2 }} variant="outlined" disabled={user.role !== "admin" || updateToastID} onClick={handleUpdate}>
+                        <Button
+                            sx={{ marginTop: 2, marginBottom: 2 }}
+                            variant="outlined"
+                            disabled={user.role !== "admin" || updateToastID}
+                            onClick={handleUpdate}
+                        >
                             Update
                         </Button>
                     </>
@@ -464,7 +510,7 @@ function Dashboard({ token, deleteToken }) {
 
     return (
         <Container maxWidth={false} sx={{ padding: 3 }}>
-            <Grid container spacing={2} justifyContent={"center"} alignItems={"center"}>
+            <Grid container spacing={2} justifyContent={"center"}>
                 <Grid item xs={12} sm={9}>
                     {Calendar()}
                 </Grid>
@@ -472,7 +518,7 @@ function Dashboard({ token, deleteToken }) {
                     {InfoPanel()}
                 </Grid>
             </Grid>
-            <Divider />
+            <Divider sx={{ marginTop: 1, marginBottom: 1 }} />
             <Container maxWidth={false} sx={{ padding: 2 }}>
                 {DateLimitMenu()}
                 {Cards()}
