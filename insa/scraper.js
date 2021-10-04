@@ -6,7 +6,7 @@ const logger = require("../logger");
 const { sleep, capitalizeTheFirstLetterOfEachWord, capitalizeFirstLetter } = require("./utils");
 
 // TODO Switch to TS fast
-class UPHFScheduleScraper {
+class INSAScheduleScraper {
     constructor(downloadPath, dataFolderPath, classname, retryInterval, successInterval) {
         this.downloadFolderPath = path.join(downloadPath, classname);
         this.dataFolderPath = dataFolderPath;
@@ -250,4 +250,4 @@ class UPHFScheduleScraper {
     }
 }
 
-module.exports = UPHFScheduleScraper;
+module.exports = INSAScheduleScraper;

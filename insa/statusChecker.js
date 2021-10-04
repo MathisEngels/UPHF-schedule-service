@@ -4,7 +4,7 @@ const axios = require("axios");
 const logger = require("../logger");
 
 // TODO Switch to TS fast
-class UPHFStatusChecker {
+class INSAStatusChecker {
     constructor(dataFolderPath, interval) {
         this.dataFolderPath = dataFolderPath;
         this.dataFilePath = path.join(dataFolderPath, "status.json");
@@ -93,4 +93,4 @@ class UPHFStatusChecker {
     }
 }
 
-module.exports = UPHFStatusChecker;
+module.exports = INSAStatusChecker;

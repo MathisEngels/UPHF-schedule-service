@@ -3,18 +3,18 @@ const path = require("path");
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 const { v4: uuidv4 } = require("uuid");
-const UPHFScheduleScraper = require("./uphf/scraper");
-const UPHFStatusChecker = require("./uphf/statusChecker");
-const ScraperManager = require("./uphf/scraperManager");
+const INSAScheduleScraper = require("./insa/scraper");
+const INSAStatusChecker = require("./insa/statusChecker");
+const ScraperManager = require("./insa/scraperManager");
 const logger = require("./logger");
 require("dotenv").config();
 
 const downloadPath = path.join(__dirname, "download");
 const dataPath = path.join(__dirname, "data");
-const statusChecker = new UPHFStatusChecker(dataPath, 5);
+const statusChecker = new INSAStatusChecker(dataPath, 5);
 const scraperManager = new ScraperManager();
-scraperManager.register(new UPHFScheduleScraper(downloadPath, dataPath, "CDSI", 30, 12 * 60));
-scraperManager.register(new UPHFScheduleScraper(downloadPath, dataPath, "MEEF", 30, 12 * 60));
+scraperManager.register(new INSAScheduleScraper(downloadPath, dataPath, "CDSI", 30, 12 * 60));
+scraperManager.register(new INSAScheduleScraper(downloadPath, dataPath, "MEEF", 30, 12 * 60));
 
 const app = express();
 app.use(express.json());
@@ -126,6 +126,6 @@ app.listen(process.env.PORT, async () => {
     logger.info(`Server running on port ${process.env.PORT}`);
     await statusChecker.start();
     await scraperManager.init();
-    await scraperManager.run();
+    // await scraperManager.run();
     logger.info(`System ready`);
 });

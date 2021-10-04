@@ -498,7 +498,7 @@ function Dashboard({ token, deleteToken }) {
                         </Link>
                     </Box>
                     <Box sx={{ position: "absolute", bottom: 0, textAlign: "center", width: 1, marginBottom: 1 }}>
-                        <Link href={"https://github.com/MathisEngels/uphf-better-schedule"} variant={"subtitle2"} sx={{ fontSize: 12, color: "#808080" }}>
+                        <Link href={"https://github.com/MathisEngels/better-insa-schedule"} variant={"subtitle2"} sx={{ fontSize: 12, color: "#808080" }}>
                             Github
                         </Link>
                         <Subtitle value={"Mathis Engels"} />
