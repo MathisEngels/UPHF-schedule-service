@@ -142,7 +142,7 @@ class UPHFScheduleScraper {
             if (headerRaw.length > 1) {
                 const temp = headerRaw[1].split("-");
                 const nameRaw = temp[0].split(" (")[0];
-                const typeRaw = temp[1];
+                const typeRaw = temp[1] ? temp[1] : nameRaw;
                 if (typeRaw.includes("CM")) {
                     type = "CM";
                 } else if (typeRaw.includes("TD")) {
