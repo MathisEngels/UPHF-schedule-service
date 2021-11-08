@@ -34,6 +34,8 @@ Full link : https://edt.mathisengels.fr
 - [x] Status indicator
 - [x] A lot of statistics
 - [ ] GitHub Actions (To build with Actions and clean code)
+- [ ] Branch for release
+- [ ] Update token when new update
 - [ ] A better way to implement more schedules
 - [ ] Refractor code
 - [ ] Logo
