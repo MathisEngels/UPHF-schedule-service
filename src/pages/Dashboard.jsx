@@ -1,8 +1,8 @@
 /* eslint-disable react-hooks/exhaustive-deps */
-import FullCalendar from '@fullcalendar/react';
-import momentPlugin from '@fullcalendar/moment'
-import timeGridPlugin from '@fullcalendar/timegrid';
-import frLocale from '@fullcalendar/core/locales/fr';
+import FullCalendar from "@fullcalendar/react";
+import momentPlugin from "@fullcalendar/moment";
+import timeGridPlugin from "@fullcalendar/timegrid";
+import frLocale from "@fullcalendar/core/locales/fr";
 import { Cancel, CheckCircle, ChevronLeft, ChevronRight, Menu } from "@mui/icons-material";
 import {
     Box,
@@ -35,7 +35,6 @@ import { Card, Dropdown, Subtitle } from "../components";
 import { getScheduleStats, getStatusStats, minToStrHours } from "../utils/algorithms";
 import { getSchedule, getStatus, updateSchedule, verify } from "../utils/api";
 import "./Dashboard.css";
-//import "./Test.css";
 
 function Dashboard({ token, deleteToken }) {
     const gradient = chroma.scale(["#e5405e", "#ffdb3a", "#3fffa2"]);
@@ -251,6 +250,8 @@ function Dashboard({ token, deleteToken }) {
             </>
         );
     };
+    // TODO Should look into it, triple call when changing the beginFinishDates
+    // It should not even call until new schedule data comes in
     const renderEventContent = (props) => {
         return (
             <Tooltip
@@ -261,6 +262,9 @@ function Dashboard({ token, deleteToken }) {
                         <Typography sx={{ fontWeight: 100, fontSize: 12, fontStyle: "italic" }}>{props.event.extendedProps.location}</Typography>
                         <Typography sx={{ fontWeight: 100, fontSize: 12, fontStyle: "italic" }}>
                             {props.event.extendedProps.type} - {props.event.extendedProps.teacher}
+                        </Typography>
+                        <Typography sx={{ fontWeight: 100, fontSize: 12, fontStyle: "italic" }}>
+                            {moment(props.event.start).format("H:mm")} - {moment(props.event.end).format("H:mm")}
                         </Typography>
                     </Box>
                 }
@@ -459,7 +463,11 @@ function Dashboard({ token, deleteToken }) {
         );
     };
     const Confettis = () => {
-        return confettiRunning && <Confetti recycle={false} numberOfPieces={500} onConfettiComplete={onConfettiComplete} />;
+        return (
+            confettiRunning && (
+                <Confetti recycle={false} numberOfPieces={500} width={window.document.body.clientWidth} onConfettiComplete={onConfettiComplete} />
+            )
+        );
     };
     const SidebarMenu = () => {
         return (
