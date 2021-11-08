@@ -15,6 +15,7 @@ const statusChecker = new INSAStatusChecker(dataPath, 5);
 const scraperManager = new ScraperManager();
 scraperManager.register(new INSAScheduleScraper(downloadPath, dataPath, "CDSI", 30, 12 * 60));
 scraperManager.register(new INSAScheduleScraper(downloadPath, dataPath, "MEEF", 30, 12 * 60));
+scraperManager.register(new INSAScheduleScraper(downloadPath, dataPath, "TNSID", 30, 12 * 60));
 
 const app = express();
 app.use(express.json());
@@ -43,6 +44,9 @@ const roleGuard = (req, res, next) => {
         case "meef":
             if (req.token.role === "meef") return next();
             break;
+        case "tnsid":
+            if (req.token.role === "tnsid") return next();
+            break;
         default:
             return res.status(400).end();
     }
@@ -59,8 +63,9 @@ app.post("/api/auth", async (req, res) => {
     const adminMatch = await bcrypt.compare(password, process.env.ADMIN_HASH);
     const cdsiMatch = await bcrypt.compare(password, process.env.CDSI_HASH);
     const meefMatch = await bcrypt.compare(password, process.env.MEEF_HASH);
+    const tnsidMatch = await bcrypt.compare(password, process.env.TNSID_HASH);
 
-    if (adminMatch || cdsiMatch || meefMatch) {
+    if (adminMatch || cdsiMatch || meefMatch || tnsidMatch) {
         let role;
         let schedules;
         if (adminMatch) {
@@ -72,6 +77,9 @@ app.post("/api/auth", async (req, res) => {
         } else if (meefMatch) {
             role = "meef";
             schedules = ["MEEF"];
+        } else if (tnsidMatch) {
+            role = "tnsid";
+            schedules = ["TNSID"];
         }
 
         const token = jwt.sign({ uuid: uuidv4(), role: role, schedules: schedules }, process.env.JWT_SECRET, { expiresIn: "365 days" });
@@ -95,6 +103,9 @@ app.get("/api/get/:classname", authGuard, roleGuard, (req, res) => {
         case "meef":
             data = scraperManager.get("MEEF").toObject();
             break;
+        case "tnsid":
+            data = scraperManager.get("TNSID").toObject();
+            break;
         default:
             data = null;
             break;
@@ -111,6 +122,10 @@ app.post("/api/update/:classname", authGuard, adminOnly, async (req, res) => {
             break;
         case "meef":
             scraper = scraperManager.get("MEEF");
+            await scraper.restart();
+            break;
+        case "tnsid":
+            scraper = scraperManager.get("TNSID");
             await scraper.restart();
             break;
         default:
