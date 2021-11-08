@@ -126,6 +126,6 @@ app.listen(process.env.PORT, async () => {
     logger.info(`Server running on port ${process.env.PORT}`);
     await statusChecker.start();
     await scraperManager.init();
-    // await scraperManager.run();
+    await scraperManager.run();
     logger.info(`System ready`);
 });
