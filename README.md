@@ -33,6 +33,8 @@ Full link : https://edt.mathisengels.fr
 - [x] Calendar
 - [x] Status indicator
 - [x] A lot of statistics
+- [ ] A better way to implement more schedules
+- [ ] Refractor code
 - [ ] Logo
 - [ ] Color by type / class
 - [ ] Export to..
