@@ -1,17 +1,15 @@
 {
   "name": "better-insa-schedule",
-  "version": "1.0.0",
+  "version": "0.1.0",
   "description": "",
   "main": "index.js",
   "scripts": {
-    "prestart": "react-scripts build",
     "start": "node index.js",
-    "react-start": "react-scripts start",
-    "react-build": "react-scripts build",
-    "react-eject": "react-scripts eject"
+    "build": "react-scripts build",
+    "test": "echo should do test now"
   },
-  "author": "",
-  "license": "ISC",
+  "author": "Mathis ENGELS <mathisengels@yahoo.fr>",
+  "license": "GNUv3",
   "dependencies": {
     "@emotion/react": "^11.4.1",
     "@emotion/styled": "^11.3.0",
