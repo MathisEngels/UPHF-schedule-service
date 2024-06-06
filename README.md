@@ -33,8 +33,8 @@ Full link : https://edt.mathisengels.fr
 - [x] Calendar
 - [x] Status indicator
 - [x] A lot of statistics
-- [ ] GitHub Actions (To build with Actions and clean code)
-- [ ] Branch for release
+- [X] CI/CD
+- [X] Proper branching strategy
 - [ ] Update token when new update
 - [ ] A better way to implement more schedules
 - [ ] Refractor code
